@@ -477,11 +477,56 @@ class ConvertRulesEngine:
             (re.compile(r'\b(\d+|vài|mấy|một)\s+cái\s+oa tử\b', re.IGNORECASE), r'\1 đứa bé'),
             (re.compile(r'\b(\d+|vài|mấy|một)\s+cái\s+tiểu hài\b', re.IGNORECASE), r'\1 đứa bé'),
             (re.compile(r'\btiểu hài này\b', re.IGNORECASE), 'đứa bé này'),
-            (re.compile(r'\btrước mặt tiểu hài\b', re.IGNORECASE), 'đứa bé trước mặt'),
             (re.compile(r'\bnhân loại kia tiểu hài\b', re.IGNORECASE), 'đứa bé loài người kia'),
             (re.compile(r'\bnhân loại tiểu hài\b', re.IGNORECASE), 'đứa bé loài người'),
             (re.compile(r'\bmột cái thông thiên trụ đen\b', re.IGNORECASE), 'một cây cột đen thông thiên'),
             (re.compile(r'\b(\d+|vài|mấy|một)\s+khỏa\s+(đan dược|linh đan|thần đan|tinh cầu|cổ thụ|đầu người)\b', re.IGNORECASE), r'\1 viên \2'),
+
+            # Cấu trúc hành động nhìn / dán mắt (盯上 / 盯着)
+            (re.compile(r'\b(ánh mắt[^\n,.:;!?]{0,25}?)\s+đinh lên\b', re.IGNORECASE), r'\1 dán chặt vào'),
+            (re.compile(r'\b(ánh mắt[^\n,.:;!?]{0,25}?)\s+đinh lấy\b', re.IGNORECASE), r'\1 nhìn chằm chằm vào'),
+            (re.compile(r'\bgắt gao\s+đinh lấy\b', re.IGNORECASE), 'nhìn chằm chằm không rời'),
+            (re.compile(r'\bgắt gao\s+đinh lên\b', re.IGNORECASE), 'dán chặt mắt vào'),
+            (re.compile(r'\bđinh lên\b', re.IGNORECASE), 'dán chặt vào'),
+            (re.compile(r'\bđinh lấy\b', re.IGNORECASE), 'nhìn chằm chằm vào'),
+            (re.compile(r'\bđinh ở\b', re.IGNORECASE), 'dán chặt vào'),
+
+            # Cấu trúc đảo ngữ: trước mặt / trước mắt + Danh từ -> Danh từ + trước mắt (phong cách convert lộn xộn)
+            (re.compile(r'\btrước mặt\s+(tiểu hài|hài tử|đứa bé|thiếu niên|thiếu nữ|thanh niên|lão giả|lão nhân|địch nhân|hung thú|mãnh thú|cự thú|quái vật|đối thủ|nam tử|nữ tử|đại hán|cường giả|vương giả|tôn giả|người|mấy người|đám người)\b', re.IGNORECASE), r'\1 trước mắt'),
+            (re.compile(r'\btrước mắt\s+(tiểu hài|hài tử|đứa bé|thiếu niên|thiếu nữ|thanh niên|lão giả|lão nhân|địch nhân|hung thú|mãnh thú|cự thú|quái vật|đối thủ|nam tử|nữ tử|đại hán|cường giả|vương giả|tôn giả|người|mấy người|đám người|cây lớn|cổ thụ|núi đá|cảnh tượng|hình ảnh|hết thảy|tất cả|nguy cơ|khó khăn)\b', re.IGNORECASE), r'\1 trước mắt'),
+            (re.compile(r'\btrước mắt\s+cái này\s+bảng\b', re.IGNORECASE), 'bảng giao diện trước mắt này'),
+            (re.compile(r'\btrước mắt\s+tuổi\b', re.IGNORECASE), 'tuổi hiện tại'),
+            (re.compile(r'\btrước mắt\s+tình huống\b', re.IGNORECASE), 'tình hình hiện tại'),
+            (re.compile(r'\btrước mắt\s+trạng thái\b', re.IGNORECASE), 'trạng thái hiện tại'),
+
+            # Cấu trúc đảo ngữ sở hữu: <Chủ thể> + vị trí + <Vật> -> <Vật> + vị trí + <Chủ thể>
+            (re.compile(r'\b(tiểu hài này|đứa bé này|thiếu niên này|thiếu nữ này|hắn|nàng|y)\s+trong tay\s+(một thanh|thanh|chiếc|cây)\s+(đoản kiếm|trường kiếm|trường thương|đại đao|bảo kiếm|thần kiếm|vũ khí|bảo cụ)\b', re.IGNORECASE), r'\2 \3 trong tay \1'),
+            (re.compile(r'\b(hắn|nàng|y|ngươi|ta)\s+trong tay\s+(trường kiếm|đoản kiếm|bảo kiếm|thần kiếm|vũ khí|bảo cụ|cốt thư|ngọc giản|pháp bảo)\b', re.IGNORECASE), r'\2 trong tay \1'),
+            (re.compile(r'\b(hắn|nàng|y|ngươi|ta)\s+sau lưng\s+(hư ảnh|động thiên|thần hoàn|dị tượng|quang dực|đôi cánh|pháp tướng)\b', re.IGNORECASE), r'\2 sau lưng \1'),
+            (re.compile(r'\b(hắn|nàng|y|ngươi|ta)\s+đỉnh đầu\s+(hư không|bảo tháp|thần hoàn|đại đỉnh|mây đen)\b', re.IGNORECASE), r'\2 trên đỉnh đầu \1'),
+            (re.compile(r'\b(hắn|nàng|y|ngươi|ta)\s+dưới chân\s+(đại địa|mặt đất|núi đá|phi kiếm|trận pháp)\b', re.IGNORECASE), r'\2 dưới chân \1'),
+
+            # Cấu trúc đảo ngữ vị trí + Danh từ -> Danh từ + vị trí
+            (re.compile(r'\bđỉnh đầu\s+(?:nồng đậm\s+)?tán cây\b', re.IGNORECASE), 'tán cây rậm rạp trên đỉnh đầu'),
+            (re.compile(r'\bđỉnh đầu\s+(mây đen|lôi vân|lôi điện|hư không|cự kiếm|bảo tháp|thần hoàn|đại đỉnh|nhật nguyệt|dị tượng|Thanh Lân Ưng|hung cầm|dị điểu)\b', re.IGNORECASE), r'\1 trên đỉnh đầu'),
+            (re.compile(r'\b(?:sau lưng|phía sau)\s+(hư ảnh|động thiên|thần hoàn|dị tượng|quang dực|đôi cánh|cánh|cự thú|địch nhân|thiếu niên|pháp tướng|cự nhân|núi thịt)\b', re.IGNORECASE), r'\1 sau lưng'),
+            (re.compile(r'\bbên người\s+(thiếu nữ|thiếu niên|thị nữ|người hầu|đồng bạn|tùy tùng|nữ tử|nam tử|linh thú|thần thú)\b', re.IGNORECASE), r'\1 bên cạnh'),
+            (re.compile(r'\bdưới chân\s+(đại địa|mặt đất|núi đá|cự thạch|trận pháp|tế đàn|linh kiếm|phi kiếm|phi chu|vân vụ)\b', re.IGNORECASE), r'\1 dưới chân'),
+            (re.compile(r'\btrong tay\s+(đoản kiếm|trường kiếm|trường thương|chiến mâu|đại đao|bảo kiếm|thần kiếm|vũ khí|bảo cụ|cốt thư|ngọc giản|pháp bảo|phù lục|trường cung|cốt mâu)\b', re.IGNORECASE), r'\1 trong tay'),
+
+            # Cấu trúc đảo ngữ: <Nơi chốn> tình huống -> tình hình <Nơi chốn>
+            (re.compile(r'\b(nơi đó|nơi đây|bên trong|bên ngoài|bốn phía|xung quanh|hai người|chiến trường|chiến đấu|trong núi)\s+tình huống\b', re.IGNORECASE), r'tình hình \1'),
+
+            # Cấu trúc đảo ngữ: loại ... này cảm -> cảm giác ... này
+            (re.compile(r'\bloại\s+([a-zA-ZÀ-ỹ\s]{2,20}?)\s+này cảm\b', re.IGNORECASE), r'cảm giác \1 này'),
+            (re.compile(r'\bloại này\s+([a-zA-ZÀ-ỹ\s]{2,20}?)\s+cảm\b', re.IGNORECASE), r'cảm giác \1 này'),
+
+            # Cấu trúc đòn đánh: cái này một kích/kiếm/quyền -> đòn kích này/kiếm này/quyền này
+            (re.compile(r'\bcái này một kích\b', re.IGNORECASE), 'đòn kích này'),
+            (re.compile(r'\bcái kia một kích\b', re.IGNORECASE), 'đòn kích kia'),
+            (re.compile(r'\bcái này một kiếm\b', re.IGNORECASE), 'nhát kiếm này'),
+            (re.compile(r'\bcái này một quyền\b', re.IGNORECASE), 'cú đấm này'),
+            (re.compile(r'\bcái này một chưởng\b', re.IGNORECASE), 'chưởng này'),
 
             # Sở hữu cách đảo
             (re.compile(r'\bhắn trong tay\b', re.IGNORECASE), 'trong tay hắn'),
