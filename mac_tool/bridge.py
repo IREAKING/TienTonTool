@@ -225,6 +225,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 "models": llm_trans.get_custom_models(mask_keys=True),
                 "active_model_id": llm_trans.config.get("active_model_id", "")
             })
+        elif path == "/api/system-prompt":
+            self._send_json({
+                "default_prompt": llm_trans.get_default_system_prompt(),
+                "global_prompt": llm_trans.config.get("global_system_prompt", "")
+            })
         elif path == "/settings":
             cfg = llm_trans.load_config()
             gemini_k = cfg.get("gemini_api_key", "")
@@ -328,6 +333,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._send_json(test_res)
             except Exception as e:
                 self._send_json({"success": False, "error": str(e)}, 500)
+
+        elif path == "/api/system-prompt":
+            p = req.get("prompt", "")
+            ok = llm_trans.save_config({"global_system_prompt": p.strip()})
+            self._send_json({"success": ok})
 
         elif path == "/translate":
             text = req.get("text", "")

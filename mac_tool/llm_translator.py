@@ -31,6 +31,7 @@ class LLMTranslator:
             "openai_base_url": "",
             "active_engine": "offline",
             "active_model_id": "",
+            "global_system_prompt": "",
             "custom_models": []
         }
         if os.path.exists(self.config_path):
@@ -41,6 +42,17 @@ class LLMTranslator:
             except Exception as e:
                 print(f"Lỗi đọc config.json: {e}")
         return cfg
+
+    def get_default_system_prompt(self) -> str:
+        return SYSTEM_PROMPT.strip()
+
+    def get_effective_prompt(self, model_cfg: Optional[Dict[str, Any]] = None) -> str:
+        if model_cfg and model_cfg.get("system_prompt", "").strip():
+            return model_cfg.get("system_prompt", "").strip()
+        global_p = self.config.get("global_system_prompt", "").strip()
+        if global_p:
+            return global_p
+        return SYSTEM_PROMPT.strip()
 
     def save_config(self, new_config: Dict[str, Any]) -> bool:
         self.config.update(new_config)
@@ -100,6 +112,7 @@ class LLMTranslator:
             "base_url": base_url,
             "api_key": model_data.get("api_key", "").strip(),
             "reasoning_effort": model_data.get("reasoning_effort", "none"),
+            "system_prompt": model_data.get("system_prompt", "").strip(),
             "temperature": float(model_data.get("temperature", 0.3)),
             "max_tokens": int(model_data.get("max_tokens", 8192))
         }
@@ -263,7 +276,8 @@ class LLMTranslator:
             headers["Authorization"] = f"Bearer {api_key}"
 
         dict_hint = self._build_dict_prompt(dict_entries)
-        sys_prompt = f"{SYSTEM_PROMPT}\n{dict_hint}"
+        base_prompt = self.get_effective_prompt(model_cfg)
+        sys_prompt = f"{base_prompt}\n{dict_hint}" if dict_hint else base_prompt
 
         payload = {
             "model": model,
@@ -316,7 +330,8 @@ class LLMTranslator:
         headers = {"Content-Type": "application/json"}
 
         dict_hint = self._build_dict_prompt(dict_entries)
-        prompt = f"{SYSTEM_PROMPT}\n{dict_hint}\nNội dung tiếng Trung cần dịch:\n\n{text}"
+        base_prompt = self.get_effective_prompt()
+        prompt = f"{base_prompt}\n{dict_hint}\nNội dung tiếng Trung cần dịch:\n\n{text}"
 
         payload = {
             "contents": [
@@ -371,7 +386,8 @@ class LLMTranslator:
         }
 
         dict_hint = self._build_dict_prompt(dict_entries)
-        sys_prompt = f"{SYSTEM_PROMPT}\n{dict_hint}"
+        base_prompt = self.get_effective_prompt()
+        sys_prompt = f"{base_prompt}\n{dict_hint}" if dict_hint else base_prompt
 
         payload = {
             "model": model,

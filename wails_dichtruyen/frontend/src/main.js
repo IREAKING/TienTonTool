@@ -497,6 +497,30 @@ class ServiceBridge {
         }
     }
 
+    static async getSystemPrompt() {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/system-prompt`);
+            if (resp.ok) return await resp.json();
+        } catch (e) {
+            console.error("Lỗi getSystemPrompt:", e);
+        }
+        return { default_prompt: "", global_prompt: "" };
+    }
+
+    static async saveSystemPrompt(prompt) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/system-prompt`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi saveSystemPrompt:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
     static async getTtsVoices() {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/tts/voices`);
@@ -2817,6 +2841,7 @@ async function initSettings() {
     const selectReasoning = document.getElementById("custom-model-reasoning");
     const inputTemp = document.getElementById("custom-model-temp");
     const inputTokens = document.getElementById("custom-model-tokens");
+    const inputModelPrompt = document.getElementById("custom-model-prompt");
     const btnToggleKey = document.getElementById("btn-toggle-custom-key");
     const btnSaveModel = document.getElementById("btn-save-custom-model");
     const btnSaveText = document.getElementById("btn-save-custom-text");
@@ -2829,6 +2854,12 @@ async function initSettings() {
 
     // Preset configurations
     const PRESETS = {
+        "muse": {
+            name: "Muse Spark (Meta AI)",
+            model: "muse-spark",
+            url: "https://api.meta.ai/v1",
+            reasoning: "none"
+        },
         "deepseek-r1": {
             name: "DeepSeek R1 (Lý luận cao)",
             model: "deepseek-reasoner",
@@ -2873,8 +2904,31 @@ async function initSettings() {
         }
     };
 
+    // Mẫu System Prompt theo phong cách dịch truyện
+    const PROMPT_TEMPLATES = {
+        "xianxia": `Bạn là một dịch giả văn học chuyên nghiệp, bậc thầy dịch tiểu thuyết tiên hiệp, kiếm hiệp, tu chân, huyền huyễn từ tiếng Trung sang tiếng Việt.
+YÊU CẦU BẮT BUỘC:
+1. Văn phong: Hào sảng, khí phái tiên phong đạo cốt, thuần chất tiên hiệp cổ phong.
+2. Danh từ riêng: Tên người, môn phái, địa danh, công pháp, pháp bảo, cảnh giới tu vi PHẢI phiên âm Hán-Việt chuẩn xác tuyệt đối.
+3. Đại từ nhân xưng: Dùng đúng chuẩn tiên hiệp (hắn, nàng, y, lão tổ, tiền bối, vãn bối, sư huynh, sư đệ, bổn toạ, đệ tử...).
+4. Giữ nguyên định dạng đoạn văn và ngoặc hội thoại.
+5. CHỈ trả về duy nhất nội dung bản dịch tiếng Việt, KHÔNG thêm lời mở đầu hay giải thích.`,
+        "urban": `Bạn là một dịch giả tiểu thuyết đô thị, hiện đại, võng du, dị năng hàng đầu từ tiếng Trung sang tiếng Việt.
+YÊU CẦU BẮT BUỘC:
+1. Văn phong: Trôi chảy, tự nhiên, sinh động, bắt trend dí dỏm, không bị gượng gạo theo câu trúc ngữ pháp tiếng Trung.
+2. Danh từ riêng: Tên nhân vật giữ âm Hán-Việt chuẩn (hoặc tên phương Tây nếu có), tên địa danh quen thuộc (Bắc Kinh, Thượng Hải, v.v.).
+3. Xưng hô: Linh hoạt tự nhiên theo bối cảnh đời sống (tôi, cậu, anh, em, sếp, đại ca, tiểu tử...).
+4. CHỈ trả về duy nhất nội dung bản dịch tiếng Việt, không kèm giải thích.`,
+        "romance": `Bạn là một dịch giả tiểu thuyết ngôn tình, cổ đại, hiện đại sắc sảo, truyền cảm và tinh tế.
+YÊU CẦU BẮT BUỘC:
+1. Văn phong: Mượt mà, đằm thắm, giàu cảm xúc, chau chuốt từng câu chữ diễn tả tâm lý nhân vật.
+2. Tên nhân vật: Giữ nguyên âm Hán-Việt mỹ miều, trang nhã.
+3. Xưng hô: Dạt dào cảm xúc (chàng, nàng, thiếp, ta, anh, em...).
+4. CHỈ trả về duy nhất nội dung bản dịch tiếng Việt, không kèm giải thích.`
+    };
+
     // Điền nhanh Preset
-    document.querySelectorAll(".btn-preset-chip").forEach(chip => {
+    document.querySelectorAll(".btn-preset-chip[data-preset]").forEach(chip => {
         chip.addEventListener("click", () => {
             const key = chip.getAttribute("data-preset");
             const p = PRESETS[key];
@@ -2887,6 +2941,33 @@ async function initSettings() {
             }
         });
     });
+
+    // Điền mẫu System Prompt
+    document.querySelectorAll(".btn-prompt-preset").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const style = btn.getAttribute("data-style");
+            if (PROMPT_TEMPLATES[style] && inputModelPrompt) {
+                inputModelPrompt.value = PROMPT_TEMPLATES[style];
+                showToast(`Đã áp dụng mẫu Prompt: ${btn.textContent}`, "info", 1800);
+            }
+        });
+    });
+
+    // Nạp Prompt Tiêu Chuẩn Mặc Định
+    const btnResetDefaultPrompt = document.getElementById("btn-reset-default-prompt");
+    if (btnResetDefaultPrompt && inputModelPrompt) {
+        btnResetDefaultPrompt.addEventListener("click", async () => {
+            try {
+                const res = await ServiceBridge.getSystemPrompt();
+                if (res && res.default_prompt) {
+                    inputModelPrompt.value = res.default_prompt;
+                    showToast("Đã nạp Prompt tiêu chuẩn mặc định!", "success", 1800);
+                }
+            } catch (e) {
+                showToast("Lỗi nạp prompt mặc định: " + e, "error");
+            }
+        });
+    }
 
     // Hiện / Ẩn Key
     if (btnToggleKey && inputModelKey) {
@@ -2906,9 +2987,10 @@ async function initSettings() {
         if (inputModelId) inputModelId.value = "";
         if (inputModelName) inputModelName.value = "";
         if (inputModelCode) inputModelCode.value = "";
-        if (inputModelUrl) inputModelUrl.value = "https://api.deepseek.com/v1";
+        if (inputModelUrl) inputModelUrl.value = "https://api.meta.ai/v1";
         if (inputModelKey) inputModelKey.value = "";
         if (selectReasoning) selectReasoning.value = "none";
+        if (inputModelPrompt) inputModelPrompt.value = "";
         if (inputTemp) inputTemp.value = "0.3";
         if (inputTokens) inputTokens.value = "8192";
         if (formTitle) formTitle.textContent = "➕ Thêm Model AI Mới";
@@ -2929,9 +3011,10 @@ async function initSettings() {
         if (inputModelId) inputModelId.value = modelObj.id || "";
         if (inputModelName) inputModelName.value = modelObj.name || "";
         if (inputModelCode) inputModelCode.value = modelObj.model || "";
-        if (inputModelUrl) inputModelUrl.value = modelObj.base_url || "https://api.deepseek.com/v1";
+        if (inputModelUrl) inputModelUrl.value = modelObj.base_url || "https://api.meta.ai/v1";
         if (inputModelKey) inputModelKey.value = modelObj.api_key || "";
         if (selectReasoning) selectReasoning.value = modelObj.reasoning_effort || "none";
+        if (inputModelPrompt) inputModelPrompt.value = modelObj.system_prompt || "";
         if (inputTemp) inputTemp.value = modelObj.temperature !== undefined ? modelObj.temperature : "0.3";
         if (inputTokens) inputTokens.value = modelObj.max_tokens !== undefined ? modelObj.max_tokens : "8192";
         if (formTitle) formTitle.textContent = `✏️ Chỉnh Sửa Model: ${modelObj.name || modelObj.model}`;
@@ -2949,6 +3032,7 @@ async function initSettings() {
             const baseUrl = inputModelUrl ? inputModelUrl.value.trim() : "";
             const apiKey = inputModelKey ? inputModelKey.value.trim() : "";
             const reasoning = selectReasoning ? selectReasoning.value : "none";
+            const customPrompt = inputModelPrompt ? inputModelPrompt.value.trim() : "";
 
             if (!baseUrl) {
                 showToast("Vui lòng nhập Base URL!", "warning");
@@ -2972,7 +3056,8 @@ async function initSettings() {
                     model: modelCode,
                     base_url: baseUrl,
                     api_key: apiKey,
-                    reasoning_effort: reasoning
+                    reasoning_effort: reasoning,
+                    system_prompt: customPrompt
                 });
 
                 if (res && res.success) {
@@ -3014,6 +3099,7 @@ async function initSettings() {
             const mUrl = inputModelUrl ? inputModelUrl.value.trim() : "";
             const mKey = inputModelKey ? inputModelKey.value.trim() : "";
             const mReasoning = selectReasoning ? selectReasoning.value : "none";
+            const mPrompt = inputModelPrompt ? inputModelPrompt.value.trim() : "";
             const mTemp = inputTemp ? parseFloat(inputTemp.value) : 0.3;
             const mTokens = inputTokens ? parseInt(inputTokens.value) : 8192;
 
@@ -3037,6 +3123,7 @@ async function initSettings() {
                     base_url: mUrl,
                     api_key: mKey,
                     reasoning_effort: mReasoning,
+                    system_prompt: mPrompt,
                     temperature: mTemp,
                     max_tokens: mTokens
                 });
@@ -3117,6 +3204,10 @@ async function initSettings() {
                             <div class="custom-model-info-row">
                                 <span class="custom-model-info-label">Cấp độ suy luận:</span>
                                 <span class="reasoning-badge ${rClass}">💡 ${reasoningLabel}</span>
+                            </div>
+                            <div class="custom-model-info-row">
+                                <span class="custom-model-info-label">Prompt chỉ thị:</span>
+                                <span class="custom-model-info-val" style="color: ${item.system_prompt ? '#f59e0b' : 'var(--text-muted)'}; font-size: 11px;">${item.system_prompt ? '📝 Đã tùy chỉnh' : 'Tiêu chuẩn'}</span>
                             </div>
                         </div>
                     </div>

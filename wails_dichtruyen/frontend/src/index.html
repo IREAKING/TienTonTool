@@ -1121,6 +1121,7 @@
                             </span>
                             <div class="preset-buttons-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <span style="font-size: 11px; color: var(--text-muted); align-self: center; margin-right: 4px;">Điền nhanh:</span>
+                                <button type="button" class="btn-preset-chip" data-preset="muse" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); font-weight: 700;">✨ Muse (Meta AI)</button>
                                 <button type="button" class="btn-preset-chip" data-preset="deepseek-r1">DeepSeek R1</button>
                                 <button type="button" class="btn-preset-chip" data-preset="deepseek-chat">DeepSeek V3</button>
                                 <button type="button" class="btn-preset-chip" data-preset="gpt-4o">OpenAI GPT-4o</button>
@@ -1134,23 +1135,23 @@
                         <div class="form-row">
                             <div class="form-group half">
                                 <label>Tên hiển thị (Display Name):</label>
-                                <input type="text" id="custom-model-name" placeholder="VD: DeepSeek R1 Lý Luận Cao, GPT-4o Mini..." class="glow-input"/>
+                                <input type="text" id="custom-model-name" placeholder="VD: Muse Spark (Meta AI), DeepSeek R1..." class="glow-input"/>
                             </div>
                             <div class="form-group half">
                                 <label>Tên mã Model (Model ID chuẩn API): <span style="color: var(--neon-red);">*</span></label>
-                                <input type="text" id="custom-model-code" placeholder="VD: deepseek-reasoner, gpt-4o, qwen/qwen-2.5-72b-instruct" class="glow-input"/>
+                                <input type="text" id="custom-model-code" placeholder="VD: muse-spark, deepseek-reasoner, gpt-4o" class="glow-input"/>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group half">
                                 <label>Base URL (Địa chỉ API): <span style="color: var(--neon-red);">*</span></label>
-                                <input type="text" id="custom-model-url" placeholder="https://api.deepseek.com/v1" value="https://api.deepseek.com/v1" class="glow-input"/>
+                                <input type="text" id="custom-model-url" placeholder="https://api.meta.ai/v1 hoặc https://api.deepseek.com/v1" value="https://api.meta.ai/v1" class="glow-input"/>
                             </div>
                             <div class="form-group half">
                                 <label>API Key:</label>
                                 <div class="input-with-button">
-                                    <input type="password" id="custom-model-key" placeholder="sk-... (để trống nếu dùng Ollama/Local)" class="glow-input"/>
+                                    <input type="password" id="custom-model-key" placeholder="sk-... / Token (để trống nếu dùng Local)" class="glow-input"/>
                                     <button type="button" id="btn-toggle-custom-key" class="btn-tool ripple" title="Hiện / Ẩn Key">👁️</button>
                                 </div>
                             </div>
@@ -1160,7 +1161,7 @@
                             <div class="form-group half">
                                 <label>Cấp độ suy luận (Reasoning Effort):</label>
                                 <select id="custom-model-reasoning" class="animated-select">
-                                    <option value="none" selected>Không kích hoạt (none - Dành cho Chat/V3/GPT thông thường)</option>
+                                    <option value="none" selected>Không kích hoạt (none - Dành cho Muse/Meta AI, Chat/V3/GPT)</option>
                                     <option value="low">Thấp (low - Suy luận nhanh, tiết kiệm token)</option>
                                     <option value="medium">Trung bình (medium - Cân bằng suy luận & tốc độ)</option>
                                     <option value="high">Cao (high - Suy luận sâu, chất lượng dịch đỉnh cao nhất)</option>
@@ -1177,6 +1178,24 @@
                                 <input type="number" id="custom-model-tokens" min="512" max="64000" step="512" value="8192" class="glow-input"/>
                                 <span class="setting-desc">Độ dài câu trả lời tối đa.</span>
                             </div>
+                        </div>
+
+                        <!-- CHỈNH SỬA SYSTEM PROMPT (EDIT PROMPT) -->
+                        <div class="form-group" style="margin-top: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                                <label style="margin-bottom: 0; font-weight: 600; color: #f59e0b;">
+                                    📝 Tùy Chỉnh Prompt Chỉ Thị Dịch Thuật (System Prompt):
+                                </label>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                                    <span style="font-size: 11px; color: var(--text-muted);">Mẫu văn phong:</span>
+                                    <button type="button" class="btn-preset-chip btn-prompt-preset" data-style="xianxia">Tiên Hiệp Cổ Điển</button>
+                                    <button type="button" class="btn-preset-chip btn-prompt-preset" data-style="urban">Đô Thị / Hài Hước</button>
+                                    <button type="button" class="btn-preset-chip btn-prompt-preset" data-style="romance">Ngôn Tình Sâu Lắng</button>
+                                    <button type="button" id="btn-reset-default-prompt" class="btn-preset-chip" style="color: var(--neon-cyan); border-color: rgba(0, 242, 254, 0.3);">🔄 Nạp Prompt Tiêu Chuẩn</button>
+                                </div>
+                            </div>
+                            <textarea id="custom-model-prompt" rows="5" placeholder="Để trống để dùng Prompt tiêu chuẩn mặc định của Tiên Tôn Tool, hoặc tự do viết/chỉnh sửa prompt chỉ thị cách xưng hô, văn phong dịch theo ý bạn..." style="width: 100%; min-height: 110px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; line-height: 1.5; background: rgba(0,0,0,0.35); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px; color: var(--text-primary); resize: vertical;"></textarea>
+                            <span class="setting-desc">Tự do chỉnh sửa prompt dịch thuật: hướng dẫn AI giữ nguyên tên Hán Việt, cách xưng hô nhân vật, ngữ điệu hào hùng hay hài hước.</span>
                         </div>
 
                         <div class="form-actions" style="display: flex; gap: 10px; margin-top: 14px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">

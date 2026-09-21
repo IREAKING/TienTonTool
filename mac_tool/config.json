@@ -4,6 +4,19 @@
   "openai_api_key": "",
   "openai_base_url": "",
   "active_engine": "offline",
-  "active_model_id": "",
-  "custom_models": []
+  "active_model_id": "custom_muse_spark",
+  "global_system_prompt": "",
+  "custom_models": [
+    {
+      "id": "custom_muse_spark",
+      "name": "Muse Spark (Meta AI)",
+      "model": "muse-spark",
+      "base_url": "https://api.meta.ai/v1",
+      "api_key": "",
+      "reasoning_effort": "none",
+      "system_prompt": "",
+      "temperature": 0.3,
+      "max_tokens": 8192
+    }
+  ]
 }
