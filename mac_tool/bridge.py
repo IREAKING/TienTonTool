@@ -16,7 +16,7 @@ from dictionary import DictionaryManager
 from translator import NovelTranslator, AVAILABLE_MODELS
 from file_processor import BatchFileProcessor
 from scraper import NovelScraper, POPULAR_PRESETS
-from exporter import merge_txt, export_epub
+from exporter import merge_txt, export_epub, strip_titles_and_export_catalog
 from llm_translator import LLMTranslator
 from tts_engine import tts_engine, AUDIO_CACHE_DIR
 from clone_manager import clone_manager
@@ -488,6 +488,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
             author = req.get("author", "Khuyết Danh")
             try:
                 res = export_epub(folder, novel_title=title, author=author)
+                self._send_json(res)
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, 500)
+
+        elif path == "/export/strip_titles":
+            folder = req.get("folder", "")
+            in_place = req.get("in_place", False)
+            output_folder = req.get("output_folder", None)
+            try:
+                res = strip_titles_and_export_catalog(folder, output_folder=output_folder, in_place=in_place)
                 self._send_json(res)
             except Exception as e:
                 self._send_json({"success": False, "error": str(e)}, 500)
