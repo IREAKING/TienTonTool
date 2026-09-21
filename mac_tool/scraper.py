@@ -63,13 +63,29 @@ POPULAR_PRESETS = {
         "next_selector": "a.pt-nextchapter",
         "toc_selector": ".pt-chapter-cont a, .pt-dir-list a"
     },
-    "69shu.me": {
-        "name": "69shu (69 Thư Ba)",
-        "title_selector": "div.txtnav > h1, h1",
+    "69shuba.cx": {
+        "name": "69shuba.cx / 69xinshu (Kho Raw Chuẩn Số 1 - Không Mã Hóa)",
+        "title_selector": "div.txtnav > h1, h1.hide720, h1",
         "content_selector": "div.txtnav, #content",
-        "exclude_selector": ".bottom-ad, .read-nav",
+        "exclude_selector": ".bottom-ad, .read-nav, .hide720, h1, .txtinfo",
         "next_selector": "a:contains('下一章'), a.next, #next_url",
-        "toc_selector": ".catalog a, #catalog a, .mulu a"
+        "toc_selector": ".catalog ul li a, #catalog ul li a, .mulu a, a[href*='/txt/']"
+    },
+    "b.faloo.com": {
+        "name": "b.faloo.com (Phi Lư - Sảng Văn & Đồng Nhân)",
+        "title_selector": ".c_tbox h1, h1",
+        "content_selector": "div#content, .nodeContent",
+        "exclude_selector": ".c_con_title, .c_con_b, .font_14",
+        "next_selector": "a#next_url, a:contains('下一章')",
+        "toc_selector": ".DivTable a, .c_b_list a"
+    },
+    "tangthuvien.vn": {
+        "name": "truyen.tangthuvien.vn (Tàng Thư Viện Convert)",
+        "title_selector": "h2.heading, .chapter-title, h1",
+        "content_selector": "div.box-chap, #chapter-content",
+        "exclude_selector": ".hidden, .box-chap-comment",
+        "next_selector": "a.btn-next, a:contains('Chương sau')",
+        "toc_selector": "ul.list-chapter a, #list-chapter a, a[href*='chuong-']"
     },
     "biquge": {
         "name": "biquge (Bút Khúc Các / 5200)",
@@ -122,6 +138,39 @@ def resolve_first_chapter_url(url: str) -> str:
             return resolve_fanqie_first_chapter(url)
         except Exception:
             return url
+
+    # 69shu / 69shuba / 69xinshu
+    if any(k in url for k in ["69shuba.", "69xinshu.", "69shu."]) and "/book/" in url:
+        try:
+            resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
+            enc = "gbk" if b"gbk" in resp.content.lower() or b"gb2312" in resp.content.lower() else "utf-8"
+            soup = BeautifulSoup(resp.content.decode(enc, errors="ignore"), "lxml")
+            for a in soup.select(".catalog ul li a, #catalog a, .mulu a, a[href*='/txt/']"):
+                href = a.get("href", "")
+                if href and "/txt/" in href:
+                    return urljoin(url, href)
+        except Exception:
+            pass
+
+    # Tangthuvien
+    if "tangthuvien.vn" in url and "chuong-" not in url:
+        try:
+            resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
+            soup = BeautifulSoup(resp.text, "lxml")
+            for a in soup.select("ul.list-chapter a, a[href*='chuong-']"):
+                href = a.get("href", "")
+                if "chuong-1" in href:
+                    return urljoin(url, href)
+            links = [a.get("href") for a in soup.select("a[href*='chuong-']") if a.get("href")]
+            if links:
+                return urljoin(url, links[0])
+        except Exception:
+            pass
+
+    # Faloo
+    if "faloo.com" in url and re.search(r'/\d+\.html', url):
+        return re.sub(r'/(\d+)\.html', r'/\1_1.html', url)
+
     if "truyenhoan.com" in url and "chuong-" not in url:
         try:
             resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
@@ -359,8 +408,8 @@ class NovelScraper:
             for a in soup.find_all("a", href=True):
                 href = a["href"]
                 text = a.get_text(strip=True)
-                if any(k in href for k in ["chuong-", "read/", ".html", "chapter"]):
-                    if any(k in text for k in ["Chương", "chuong", "第", "Hồi", "tiết", "Quyển"]) or re.search(r'^\d+', text):
+                if any(k in href for k in ["chuong-", "read/", ".html", "chapter", "/txt/"]):
+                    if any(k in text for k in ["Chương", "chuong", "第", "Hồi", "tiết", "Quyển", "txt"]) or re.search(r'^\d+', text):
                         links.append(a)
 
         idx = 1

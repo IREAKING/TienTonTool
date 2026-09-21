@@ -184,14 +184,7 @@ class ServiceBridge {
         return await resp.json();
     }
 
-    static async startBatch(inputFolder, outputFolder, suffix, model, beamSize, batchSize, opencc) {
-        if (await this.isWailsAvailable()) {
-            try {
-                return await window.go.main.App.StartBatch(inputFolder, outputFolder, suffix, model, beamSize, batchSize, opencc);
-            } catch (e) {
-                console.warn("Wails StartBatch failed, trying HTTP fallback:", e);
-            }
-        }
+    static async startBatch(inputFolder, outputFolder, suffix, model, beamSize, batchSize, opencc, concurrency = 3, autoClean = true) {
         const resp = await fetch(`${HTTP_BRIDGE_URL}/start_batch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -202,8 +195,51 @@ class ServiceBridge {
                 model: model,
                 beam_size: beamSize,
                 batch_size: batchSize,
-                opencc: opencc
+                opencc: opencc,
+                concurrency: concurrency,
+                auto_clean: autoClean
             })
+        });
+        return await resp.json();
+    }
+
+    static async extractGlossary(text, method = "auto", engine = "gemini", minCount = 1) {
+        const resp = await fetch(`${HTTP_BRIDGE_URL}/glossary/extract`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: text,
+                method: method,
+                engine: engine,
+                min_count: minCount
+            })
+        });
+        return await resp.json();
+    }
+
+    static async batchAddGlossary(entries) {
+        const resp = await fetch(`${HTTP_BRIDGE_URL}/glossary/batch_add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ entries: entries })
+        });
+        return await resp.json();
+    }
+
+    static async lookupGlossary(text) {
+        const resp = await fetch(`${HTTP_BRIDGE_URL}/glossary/lookup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+        });
+        return await resp.json();
+    }
+
+    static async alignBilingual(src, tgt) {
+        const resp = await fetch(`${HTTP_BRIDGE_URL}/bilingual/align`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ src: src, tgt: tgt })
         });
         return await resp.json();
     }
@@ -641,14 +677,37 @@ class ServiceBridge {
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initTextTranslation();
+    initBilingualStudio();
     initBatchTranslation();
     initConvert();
     initScraper();
     initTts();
     initDictionary();
+    initAutoGlossary();
     initSettings();
     startHealthMonitor();
 });
+
+function switchTab(tabId) {
+    const navItems = document.querySelectorAll(".nav-item");
+    const tabPanes = document.querySelectorAll(".tab-pane");
+    navItems.forEach(i => i.classList.remove("active"));
+    tabPanes.forEach(p => p.classList.remove("active"));
+    const btn = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+    if (btn) btn.classList.add("active");
+    const pane = document.getElementById(tabId);
+    if (pane) pane.classList.add("active");
+}
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 // ==========================================
 // CHUYỂN TAB CÓ HIỆU ỨNG
@@ -719,6 +778,36 @@ function initTextTranslation() {
             showToast("Không thể đọc clipboard: " + e, "error");
         }
     });
+
+    const btnScanNamesQuick = document.getElementById("btn-scan-names-quick");
+    if (btnScanNamesQuick) {
+        btnScanNamesQuick.addEventListener("click", () => {
+            const raw = srcText.value.trim();
+            if (!raw) {
+                showToast("Vui lòng dán văn bản tiếng Trung cần quét tên riêng!", "warning");
+                return;
+            }
+            if (window.triggerQuickScanFromText) {
+                window.triggerQuickScanFromText(raw);
+            }
+        });
+    }
+
+    const btnOpenInStudio = document.getElementById("btn-open-in-studio");
+    if (btnOpenInStudio) {
+        btnOpenInStudio.addEventListener("click", () => {
+            const s = srcText.value.trim();
+            const t = tgtText.value.trim();
+            if (!s && !t) {
+                showToast("Vui lòng có ít nhất văn bản tiếng Trung hoặc bản dịch để mở Studio!", "warning");
+                return;
+            }
+            switchTab("tab-bilingual");
+            if (window.loadBilingualStudio) {
+                window.loadBilingualStudio(s, t);
+            }
+        });
+    }
 
     const btnCleanSrc = document.getElementById("btn-clean-src");
     if (btnCleanSrc) {
@@ -863,13 +952,17 @@ function initBatchTranslation() {
         const outF = outputFolder.value.trim();
         const suffix = suffixInput.value.trim() || "_viet";
         const model = modelSelect.value || "DanVP/MoxhiMT-60 (Đỉnh Cao Tiên Hiệp - Văn phong đỉnh cao)";
+        const concurrencySelect = document.getElementById("batch-concurrency-select");
+        const autoCleanCheck = document.getElementById("batch-auto-clean-censor");
+        const concurrency = concurrencySelect ? (parseInt(concurrencySelect.value) || 3) : 3;
+        const autoClean = autoCleanCheck ? autoCleanCheck.checked : true;
 
         btnStart.disabled = true;
         btnStop.disabled = false;
 
         try {
-            await ServiceBridge.startBatch(inF, outF, suffix, model, 2, 16, true);
-            showToast("Đã kích hoạt tiến trình dịch hàng loạt!", "info", 3000);
+            await ServiceBridge.startBatch(inF, outF, suffix, model, 2, 16, true, concurrency, autoClean);
+            showToast(`Đã kích hoạt dịch hàng loạt (${concurrency} luồng song song, auto-save)!`, "info", 3000);
             startBatchPolling();
         } catch (err) {
             showToast("Lỗi khởi chạy batch: " + err, "error");
@@ -2193,6 +2286,360 @@ function initDictionary() {
     });
 
     loadDict();
+}
+
+// ==========================================
+// TAB: STUDIO BIÊN TẬP SONG NGỮ
+// ==========================================
+function initBilingualStudio() {
+    const btnSync = document.getElementById("btn-bilingual-sync-from-text");
+    const btnRealign = document.getElementById("btn-bilingual-realign");
+    const btnSave = document.getElementById("btn-bilingual-save");
+    const btnCopy = document.getElementById("btn-bilingual-copy");
+    const searchInput = document.getElementById("bilingual-quick-search");
+    const btnLookup = document.getElementById("btn-bilingual-lookup");
+    const lookupResult = document.getElementById("bilingual-lookup-result");
+    const btnAddName = document.getElementById("btn-bilingual-add-name");
+    const rowsContainer = document.getElementById("bilingual-rows");
+    const statsLabel = document.getElementById("bilingual-stats");
+
+    let currentPairs = [];
+
+    window.loadBilingualStudio = async function(src, tgt) {
+        if (!src && !tgt) {
+            const s = document.getElementById("src-text") ? document.getElementById("src-text").value : "";
+            const t = document.getElementById("tgt-text") ? document.getElementById("tgt-text").value : "";
+            src = s;
+            tgt = t;
+        }
+
+        if (!src.trim() && !tgt.trim()) {
+            showToast("Vui lòng có ít nhất văn bản tiếng Trung hoặc bản dịch để nạp vào Studio!", "warning");
+            return;
+        }
+
+        rowsContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--neon-cyan);">⏳ Đang phân tích và đối chiếu từng câu/đoạn song ngữ...</div>';
+
+        try {
+            const res = await ServiceBridge.alignBilingual(src, tgt);
+            if (res && res.pairs) {
+                currentPairs = res.pairs;
+                renderRows(res.pairs);
+                showToast(`Đã căn chỉnh thành công ${res.pairs.length} đoạn văn song ngữ!`, "success");
+            } else {
+                showToast("Lỗi căn chỉnh song ngữ", "error");
+            }
+        } catch (e) {
+            showToast("Lỗi kết nối Studio: " + e, "error");
+        }
+    };
+
+    function renderRows(pairs) {
+        if (!pairs || pairs.length === 0) {
+            rowsContainer.innerHTML = `
+                <div class="bilingual-empty-state">
+                    <span class="empty-icon">📑</span>
+                    <h4>Chưa có dữ liệu biên tập</h4>
+                    <p>Dán văn bản ở tab "Dịch văn bản" rồi bấm <strong>"📑 Mở Studio"</strong></p>
+                </div>
+            `;
+            statsLabel.textContent = "0 đoạn văn";
+            return;
+        }
+
+        statsLabel.textContent = `${pairs.length} đoạn văn`;
+        rowsContainer.innerHTML = "";
+
+        pairs.forEach((p, idx) => {
+            const row = document.createElement("div");
+            row.className = "bilingual-row";
+            row.id = `bilingual-row-${idx}`;
+
+            row.innerHTML = `
+                <div class="bilingual-cell bilingual-cell-zh" title="Bôi đen hoặc click đúp để tra Hán-Việt">${escapeHtml(p.src || "")}</div>
+                <div class="bilingual-cell bilingual-cell-hv">${escapeHtml(p.hanviet || "")}</div>
+                <div class="bilingual-cell bilingual-cell-vi">
+                    <textarea class="bilingual-edit-input" data-index="${idx}">${escapeHtml(p.tgt || "")}</textarea>
+                </div>
+            `;
+
+            const zhCell = row.querySelector(".bilingual-cell-zh");
+            zhCell.addEventListener("mouseup", () => {
+                const sel = window.getSelection().toString().trim();
+                if (sel && sel.length <= 10) {
+                    searchInput.value = sel;
+                    doLookup(sel);
+                }
+            });
+
+            const editInput = row.querySelector(".bilingual-edit-input");
+            editInput.addEventListener("input", (e) => {
+                if (currentPairs[idx]) {
+                    currentPairs[idx].tgt = e.target.value;
+                }
+            });
+
+            rowsContainer.appendChild(row);
+        });
+    }
+
+    async function doLookup(text) {
+        if (!text) return;
+        try {
+            const res = await ServiceBridge.lookupGlossary(text);
+            if (res && res.hanviet) {
+                lookupResult.textContent = `${res.term} ➔ ${res.hanviet}`;
+                lookupResult.style.display = "inline-block";
+                btnAddName.style.display = "inline-block";
+                btnAddName.onclick = async () => {
+                    await ServiceBridge.batchAddGlossary([{ src: res.term, tgt: res.hanviet }]);
+                    showToast(`Đã thêm "${res.term} = ${res.hanviet}" vào names.txt!`, "success");
+                    btnAddName.style.display = "none";
+                    const dictArea = document.getElementById("dict-content-area");
+                    if (dictArea) {
+                        const dRes = await ServiceBridge.getDictionary();
+                        if (dRes && dRes.content) dictArea.value = dRes.content;
+                    }
+                };
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    if (btnLookup) {
+        btnLookup.addEventListener("click", () => {
+            const val = searchInput.value.trim();
+            if (val) doLookup(val);
+        });
+    }
+
+    if (btnSync) {
+        btnSync.addEventListener("click", () => {
+            window.loadBilingualStudio();
+        });
+    }
+
+    if (btnRealign) {
+        btnRealign.addEventListener("click", () => {
+            const srcAll = currentPairs.map(p => p.src).join("\n\n");
+            const tgtAll = currentPairs.map(p => p.tgt).join("\n\n");
+            window.loadBilingualStudio(srcAll, tgtAll);
+        });
+    }
+
+    if (btnCopy) {
+        btnCopy.addEventListener("click", async () => {
+            const fullTgt = currentPairs.map(p => p.tgt).join("\n\n");
+            if (!fullTgt.trim()) {
+                showToast("Bản dịch đang rỗng!", "warning");
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(fullTgt);
+                showToast("Đã sao chép toàn bộ bản dịch đã biên tập!", "success");
+            } catch (e) {
+                showToast("Lỗi sao chép: " + e, "error");
+            }
+        });
+    }
+
+    if (btnSave) {
+        btnSave.addEventListener("click", () => {
+            const fullTgt = currentPairs.map(p => p.tgt).join("\n\n");
+            if (!fullTgt.trim()) {
+                showToast("Bản dịch đang rỗng!", "warning");
+                return;
+            }
+            const blob = new Blob([fullTgt], { type: "text/plain;charset=utf-8" });
+            const fname = `chuong_dich_${Date.now()}.txt`;
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = fname;
+            a.click();
+            showToast("Đã tải xuống file bản dịch đã biên tập!", "success");
+        });
+    }
+}
+
+// ==========================================
+// TÍNH NĂNG: TRÍCH XUẤT TÊN RIÊNG AI (AUTO-GLOSSARY)
+// ==========================================
+function initAutoGlossary() {
+    const inputArea = document.getElementById("glossary-input-text");
+    const methodSelect = document.getElementById("glossary-method-select");
+    const btnFromTab = document.getElementById("btn-glossary-from-tab");
+    const btnScan = document.getElementById("btn-glossary-scan");
+    const resultsBox = document.getElementById("glossary-results-box");
+    const countLabel = document.getElementById("glossary-count-label");
+    const checkAll = document.getElementById("glossary-check-all");
+    const btnSelectAll = document.getElementById("btn-glossary-select-all");
+    const btnBatchAdd = document.getElementById("btn-glossary-batch-add");
+    const tableBody = document.getElementById("glossary-table-body");
+
+    let currentEntities = [];
+
+    if (btnFromTab) {
+        btnFromTab.addEventListener("click", () => {
+            const src = document.getElementById("src-text") ? document.getElementById("src-text").value : "";
+            if (src.trim()) {
+                inputArea.value = src;
+                showToast("Đã nạp văn bản từ tab Dịch!", "info");
+            } else {
+                showToast("Tab Dịch đang trống!", "warning");
+            }
+        });
+    }
+
+    window.triggerQuickScanFromText = function(text) {
+        if (!text) return;
+        inputArea.value = text;
+        switchTab("tab-dict");
+        setTimeout(() => {
+            runScan();
+        }, 250);
+    };
+
+    async function runScan() {
+        const text = inputArea.value.trim();
+        if (!text) {
+            showToast("Vui lòng dán văn bản tiếng Trung cần quét!", "warning");
+            return;
+        }
+
+        btnScan.disabled = true;
+        btnScan.innerHTML = '<span>⏳</span><span>Đang quét...</span>';
+
+        const method = methodSelect ? methodSelect.value : "auto";
+        try {
+            const res = await ServiceBridge.extractGlossary(text, method);
+            if (res && res.entities) {
+                currentEntities = res.entities;
+                renderGlossaryTable(res.entities);
+                resultsBox.style.display = "block";
+                countLabel.textContent = `Đã tìm thấy: ${res.entities.length} thực thể`;
+                showToast(`Đã quét xong! Tìm thấy ${res.entities.length} thực thể riêng biệt.`, "success");
+            } else {
+                showToast("Không tìm thấy thực thể mới hoặc có lỗi.", "info");
+            }
+        } catch (e) {
+            showToast("Lỗi quét tên riêng: " + e, "error");
+        } finally {
+            btnScan.disabled = false;
+            btnScan.innerHTML = '<span>🔍</span><span>Quét Tên Riêng Ngay</span>';
+        }
+    }
+
+    if (btnScan) {
+        btnScan.addEventListener("click", runScan);
+    }
+
+    function renderGlossaryTable(entities) {
+        tableBody.innerHTML = "";
+        if (!entities || entities.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Không tìm thấy thực thể mới (có thể các từ đã có sẵn trong names.txt).</td></tr>';
+            return;
+        }
+
+        entities.forEach((ent, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="text-align: center; padding: 6px;"><input type="checkbox" class="glossary-item-check" data-index="${idx}" checked/></td>
+                <td style="padding: 6px; font-weight: 700; color: #f1f5f9;">${escapeHtml(ent.src)}</td>
+                <td style="padding: 6px;"><input type="text" class="glossary-edit-tgt" data-index="${idx}" value="${escapeHtml(ent.tgt)}"/></td>
+                <td style="padding: 6px;"><span class="glossary-cat-badge">${escapeHtml(ent.category || "Chung")}</span></td>
+                <td style="text-align: center; padding: 6px; color: #94a3b8;">${ent.count || 1}</td>
+                <td style="text-align: center; padding: 6px;">
+                    <button class="btn-tool ripple btn-add-single-entity" data-index="${idx}" title="Thêm từ này vào từ điển" style="color: #f59e0b; padding: 2px 8px; font-size: 11px;">➕ Thêm</button>
+                </td>
+            `;
+
+            const editTgt = tr.querySelector(".glossary-edit-tgt");
+            editTgt.addEventListener("input", (e) => {
+                if (currentEntities[idx]) currentEntities[idx].tgt = e.target.value.trim();
+            });
+
+            const btnAddSingle = tr.querySelector(".btn-add-single-entity");
+            btnAddSingle.addEventListener("click", async () => {
+                const targetEntry = currentEntities[idx];
+                if (targetEntry) {
+                    await ServiceBridge.batchAddGlossary([targetEntry]);
+                    showToast(`Đã thêm "${targetEntry.src} = ${targetEntry.tgt}" vào Names!`, "success");
+                    btnAddSingle.textContent = "✓ Đã thêm";
+                    btnAddSingle.disabled = true;
+                    const dictArea = document.getElementById("dict-content-area");
+                    if (dictArea) {
+                        const dRes = await ServiceBridge.getDictionary();
+                        if (dRes && dRes.content) dictArea.value = dRes.content;
+                    }
+                }
+            });
+
+            tableBody.appendChild(tr);
+        });
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener("change", (e) => {
+            const checkboxes = document.querySelectorAll(".glossary-item-check");
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        });
+    }
+
+    if (btnSelectAll) {
+        btnSelectAll.addEventListener("click", () => {
+            const checkboxes = document.querySelectorAll(".glossary-item-check");
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            if (checkAll) checkAll.checked = !allChecked;
+        });
+    }
+
+    if (btnBatchAdd) {
+        btnBatchAdd.addEventListener("click", async () => {
+            const checkedBoxes = document.querySelectorAll(".glossary-item-check:checked");
+            if (checkedBoxes.length === 0) {
+                showToast("Vui lòng tích chọn ít nhất 1 thực thể cần thêm!", "warning");
+                return;
+            }
+
+            const toAdd = [];
+            checkedBoxes.forEach(cb => {
+                const idx = parseInt(cb.getAttribute("data-index"));
+                if (currentEntities[idx]) {
+                    toAdd.push({
+                        src: currentEntities[idx].src,
+                        tgt: currentEntities[idx].tgt
+                    });
+                }
+            });
+
+            btnBatchAdd.disabled = true;
+            try {
+                const res = await ServiceBridge.batchAddGlossary(toAdd);
+                if (res && res.success) {
+                    showToast(`Đã thêm thành công ${res.added} thực thể mới vào names.txt!`, "success", 3000);
+                    const dictArea = document.getElementById("dict-content-area");
+                    if (dictArea) {
+                        const dRes = await ServiceBridge.getDictionary();
+                        if (dRes && dRes.content) dictArea.value = dRes.content;
+                    }
+                    checkedBoxes.forEach(cb => {
+                        cb.checked = false;
+                        cb.disabled = true;
+                        const tr = cb.closest("tr");
+                        if (tr) tr.style.opacity = "0.5";
+                    });
+                } else {
+                    showToast("Lỗi khi thêm vào từ điển!", "error");
+                }
+            } catch (e) {
+                showToast("Lỗi: " + e, "error");
+            } finally {
+                btnBatchAdd.disabled = false;
+            }
+        });
+    }
 }
 
 // ==========================================

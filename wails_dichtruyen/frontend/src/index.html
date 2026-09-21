@@ -36,6 +36,11 @@
                 <span class="nav-label">Dịch văn bản</span>
                 <span class="nav-indicator"></span>
             </button>
+            <button class="nav-item" data-tab="tab-bilingual">
+                <span class="nav-icon">📑</span>
+                <span class="nav-label">Studio Song Ngữ</span>
+                <span class="nav-indicator"></span>
+            </button>
             <button class="nav-item" data-tab="tab-batch">
                 <span class="nav-icon">📁</span>
                 <span class="nav-label">Dịch hàng loạt</span>
@@ -109,6 +114,8 @@
                             <span class="box-title">Tiếng Trung Gốc</span>
                         </div>
                         <div class="box-tools">
+                            <button id="btn-scan-names-quick" class="btn-tool ripple" title="Quét tên riêng tự động bằng AI (Nhân vật, Tông môn, Bảo vật)" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);">🔍 Quét Tên AI</button>
+                            <button id="btn-open-in-studio" class="btn-tool ripple" title="Mở sang Studio Song Ngữ để biên tập chuyên sâu" style="color: #a78bfa; border-color: rgba(167, 139, 250, 0.4);">📑 Mở Studio</button>
                             <button id="btn-clean-src" class="btn-tool ripple" title="Khử ký tự rác chèn né kiểm duyệt (c·hết ➔ chết, g·iết ➔ giết, b·ạo đ·ộng ➔ bạo động)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);">🧹 Khử Rác</button>
                             <button id="btn-paste-src" class="btn-tool ripple">📋 Dán</button>
                             <button id="btn-clear-src" class="btn-tool ripple">🗑️ Xóa</button>
@@ -177,6 +184,55 @@
             </div>
         </section>
 
+        <!-- TAB: STUDIO BIÊN TẬP SONG NGỮ -->
+        <section id="tab-bilingual" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Studio Biên Tập Song Ngữ</h3>
+                        <span class="badge-neon">SIDE-BY-SIDE PRO</span>
+                    </div>
+                    <p class="header-subtitle">So sánh câu song song: Tiếng Trung Gốc | Hán-Việt Convert | Bản Dịch Hoàn Chỉnh (Chỉnh sửa & Ghim tên trực tiếp)</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-bilingual-sync-from-text" class="btn-tool ripple" title="Đồng bộ nội dung hiện tại từ tab Dịch">📥 Nạp từ Tab Dịch</button>
+                    <button id="btn-bilingual-realign" class="btn-tool ripple" title="Tự động căn chỉnh lại các đoạn văn">🔄 Căn chỉnh lại</button>
+                    <button id="btn-bilingual-save" class="btn-tool ripple" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);" title="Lưu toàn bộ bản dịch đã biên tập">💾 Lưu Bản Dịch</button>
+                    <button id="btn-bilingual-copy" class="btn-tool ripple" title="Sao chép toàn bộ bản dịch">📋 Sao chép</button>
+                </div>
+            </div>
+
+            <!-- Thanh lọc & tìm kiếm từ điển nhanh -->
+            <div class="bilingual-toolbar glass-card">
+                <div class="toolbar-left">
+                    <span class="bilingual-badge">🔍 Tra Hán-Việt:</span>
+                    <input type="text" id="bilingual-quick-search" placeholder="Bôi đen chữ hoặc nhập từ tiếng Trung cần tra..."/>
+                    <button id="btn-bilingual-lookup" class="btn-secondary ripple">Tra cứu</button>
+                    <span id="bilingual-lookup-result" class="lookup-badge" style="display: none;"></span>
+                    <button id="btn-bilingual-add-name" class="btn-secondary ripple" style="display: none; color: #f59e0b;">➕ Thêm vào Names</button>
+                </div>
+                <div class="toolbar-right">
+                    <span id="bilingual-stats" class="bilingual-stats">0 đoạn văn</span>
+                </div>
+            </div>
+
+            <!-- Bảng hiển thị 3 cột song song -->
+            <div class="bilingual-grid-container glass-card">
+                <div class="bilingual-grid-header">
+                    <div class="col-head col-zh">🇨🇳 Tiếng Trung Gốc</div>
+                    <div class="col-head col-hv">🇻🇳 Phiên Âm Hán-Việt</div>
+                    <div class="col-head col-vi">✨ Bản Dịch Biên Tập (Sửa trực tiếp)</div>
+                </div>
+                <div id="bilingual-rows" class="bilingual-rows">
+                    <div class="bilingual-empty-state">
+                        <span class="empty-icon">📑</span>
+                        <h4>Chưa có dữ liệu biên tập</h4>
+                        <p>Dán văn bản ở tab "Dịch văn bản" rồi bấm <strong>"📑 Mở Studio"</strong> hoặc bấm <strong>"📥 Nạp từ Tab Dịch"</strong> ở trên</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- TAB 2: DỊCH HÀNG LOẠT -->
         <section id="tab-batch" class="tab-pane">
             <div class="pane-header">
@@ -222,6 +278,27 @@
                             <option value="Gemini 1.5 Flash (Google AI - Nhanh & Mượt)">Gemini 1.5 Flash (Google AI - Mượt mà)</option>
                             <option value="DeepSeek-V3 (AI Văn Học - Chuẩn xác cao)">DeepSeek-V3 (AI Văn Học - Chuẩn xác)</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Số luồng dịch song song (Workers):</label>
+                        <select id="batch-concurrency-select" class="animated-select">
+                            <option value="1">1 luồng (Tuần tự)</option>
+                            <option value="2">2 luồng</option>
+                            <option value="3" selected>3 luồng (Khuyên dùng - Nhanh & Mượt)</option>
+                            <option value="4">4 luồng (Tăng tốc)</option>
+                            <option value="5">5 luồng (Tối đa)</option>
+                        </select>
+                    </div>
+                    <div class="form-group half" style="display: flex; flex-direction: column; justify-content: center; gap: 6px; padding-top: 14px;">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="batch-auto-clean-censor" checked/>
+                            <span class="checkbox-custom"></span>
+                            <span>Tự động khử rác kiểm duyệt (c·hết, g·iết, b·ạo...)</span>
+                        </label>
+                        <span class="badge-neon" style="align-self: flex-start; font-size: 10px;">🛡️ AUTO-SAVE MỖI CHƯƠNG AN TOÀN</span>
                     </div>
                 </div>
 
@@ -471,12 +548,14 @@
                     <div class="form-group half">
                         <label>Chọn trang truyện mẫu (Preset):</label>
                         <select id="scraper-preset-select" class="animated-select">
-                            <option value="sangtacviet.app">sangtacviet.app (Tự động chuyển nguồn gốc Fanqie/69shu/UU...)</option>
-                            <option value="fanqienovel.com">fanqienovel.com (番茄小说 - Fanqie / Cà Chua)</option>
+                            <option value="69shuba.cx" selected>69shuba.cx / 69xinshu (Kho Raw Chuẩn Số 1 - Không Mã Hóa)</option>
+                            <option value="fanqienovel.com">fanqienovel.com (番茄小说 - Fanqie / Cà Chua PUA Font)</option>
+                            <option value="sangtacviet.app">sangtacviet.app (Tự động chuyển nguồn gốc)</option>
+                            <option value="b.faloo.com">b.faloo.com (Phi Lư - Sảng Văn & Đồng Nhân)</option>
+                            <option value="tangthuvien.vn">truyen.tangthuvien.vn (Tàng Thư Viện Convert)</option>
                             <option value="tvtruyen.live">tvtruyen.live (Truyện TV - Full Tiếng Việt)</option>
                             <option value="truyenhoan.com">truyenhoan.com (Truyện Hoàn - Full Tiếng Việt)</option>
-                            <option value="ihuliwang.net" selected>ihuliwang.net (Hồ Ly Mạng - Mặc định)</option>
-                            <option value="69shu.me">69shu.me (69 Thư Ba)</option>
+                            <option value="ihuliwang.net">ihuliwang.net (Hồ Ly Mạng)</option>
                             <option value="biquge">biquge (Bút Khúc Các / 5200)</option>
                             <option value="uukanshu">uukanshu (UU Đọc Sách)</option>
                             <option value="custom">Tùy chỉnh (Nhập selector thủ công)</option>
@@ -881,6 +960,69 @@
                         <input type="text" id="dict-src-input" placeholder="Từ gốc tiếng Trung (VD: 苏阳 hoặc 混沌珠)"/>
                         <input type="text" id="dict-tgt-input" placeholder="Từ dịch tiếng Việt (VD: Tô Dương hoặc Hỗn Độn Châu)"/>
                         <button id="btn-add-dict-entry" class="btn-primary ripple">➕ Thêm vào từ điển</button>
+                    </div>
+                </div>
+
+                <!-- Quét tên riêng tự động bằng AI / Quy tắc -->
+                <div class="glossary-ai-card glass-card">
+                    <div class="glossary-header">
+                        <div class="glossary-title">
+                            <span class="badge-neon" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);">AI AUTO-GLOSSARY</span>
+                            <span style="font-weight: 700; color: var(--text-primary); margin-left: 8px;">Trích Xuất Tên Riêng & Thuật Ngữ Tự Động</span>
+                        </div>
+                        <span class="box-hint">Tự động quét Nhân vật, Tông môn, Bảo vật, Địa danh & đề xuất phiên âm Hán-Việt</span>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 12px;">
+                        <textarea id="glossary-input-text" placeholder="Dán văn bản hoặc chương truyện tiếng Trung vào đây để quét thực thể tự động..." style="height: 80px; width: 100%;"></textarea>
+                    </div>
+
+                    <div class="form-row" style="align-items: center; justify-content: space-between; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="font-size: 12px; color: var(--text-secondary);">Phương thức:</label>
+                            <select id="glossary-method-select" class="animated-select" style="min-width: 170px;">
+                                <option value="auto" selected>Tự động (AI + Quy tắc)</option>
+                                <option value="rule">Quy tắc Offline (Cực nhanh)</option>
+                                <option value="llm">AI Sâu (Gemini / DeepSeek)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-glossary-from-tab" class="btn-tool ripple">📥 Lấy từ tab Dịch</button>
+                            <button id="btn-glossary-scan" class="btn-primary ripple glow-button">
+                                <span>🔍</span>
+                                <span>Quét Tên Riêng Ngay</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bảng kết quả quét -->
+                    <div id="glossary-results-box" class="glossary-results-container" style="display: none; margin-top: 16px;">
+                        <div class="results-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="glossary-count-label" class="badge-neon" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);">Đã tìm thấy: 0 thực thể</span>
+                            <div class="results-actions" style="display: flex; gap: 10px;">
+                                <button id="btn-glossary-select-all" class="btn-tool ripple">Chọn tất cả</button>
+                                <button id="btn-glossary-batch-add" class="btn-primary ripple" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                    <span>➕</span>
+                                    <span>Thêm mục đã chọn vào Names (1-Click)</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                            <table class="glossary-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
+                                        <th style="width: 40px; text-align: center; padding: 8px;"><input type="checkbox" id="glossary-check-all" checked/></th>
+                                        <th style="padding: 8px;">Từ gốc (Trung)</th>
+                                        <th style="padding: 8px;">Hán-Việt Đề Xuất (Sửa được)</th>
+                                        <th style="padding: 8px;">Phân loại</th>
+                                        <th style="width: 80px; text-align: center; padding: 8px;">Tần suất</th>
+                                        <th style="width: 90px; text-align: center; padding: 8px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="glossary-table-body">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

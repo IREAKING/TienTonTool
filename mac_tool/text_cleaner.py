@@ -13,6 +13,18 @@ WATERMARK_PATTERNS = [
     r'ủng\s+hộ\s+(?:nhóm\s+dịch|dịch\s+giả|tác\s+giả)[^\n]*',
     r'theo\s+dõi\s+(?:fanpage|kênh|website)[^\n]*',
     r'(?:truyenfull|tangthuvien|metruyenchu|truyencv|sstruyen|nettruyen|bachngocsach|wikidich|thichdoctruyen)\.(?:vn|com|net|org|xyz|cc)',
+    r'\(本章完\)',
+    r'\(第\s*\d+\s*页\)',
+    r'69\s*书吧',
+    r'69shuba\.(?:cx|com|pro|me|cc)',
+    r'69xinshu\.(?:com|net)',
+    r'请收藏本站[^\n]*',
+    r'最快更新[^\n]*',
+    r'天才一秒记住[^\n]*',
+    r'本章未完[^\n]*',
+    r'点击下一页[^\n]*',
+    r'wap\.faloo\.com[^\n]*',
+    r'b\.faloo\.com[^\n]*',
 ]
 
 # Các từ nhạy cảm hay bị website truyện chèn dấu cách (c h ế t, g i ế t...)

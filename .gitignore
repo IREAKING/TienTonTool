@@ -48,3 +48,5 @@ mac_tool/*.log
 # Wails build output & old aliases
 wails_dichtruyen/build/bin/
 DichTruyen.app/
+*.dmg
+build_dmg/

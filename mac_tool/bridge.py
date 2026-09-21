@@ -22,6 +22,7 @@ from tts_engine import tts_engine, AUDIO_CACHE_DIR
 from clone_manager import clone_manager
 from convert_polisher import convert_polisher
 from text_cleaner import text_cleaner
+from glossary_extractor import glossary_extractor
 import urllib.parse
 import asyncio
 
@@ -34,9 +35,9 @@ os.makedirs(EXPORTS_DIR, exist_ok=True)
 
 dict_mgr = DictionaryManager(os.path.join(BASE_DIR, "names.txt"))
 translator = NovelTranslator(models_dir=MODELS_DIR, dict_manager=dict_mgr)
-batch_proc = BatchFileProcessor(translator=translator)
-scraper = NovelScraper(translator=translator)
 llm_trans = LLMTranslator()
+batch_proc = BatchFileProcessor(translator=translator, llm_translator=llm_trans, dict_manager=dict_mgr)
+scraper = NovelScraper(translator=translator)
 
 # Tiến trình batch Convert sang Dịch
 batch_convert_state = {
@@ -353,6 +354,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
             beam_size = int(req.get("beam_size", 2))
             batch_size = int(req.get("batch_size", 16))
             opencc_enabled = bool(req.get("opencc", True))
+            concurrency = int(req.get("concurrency", 3))
+            auto_clean = bool(req.get("auto_clean", True))
 
             if not os.path.isdir(input_folder):
                 self._send_json({"error": "Thư mục nguồn không hợp lệ"}, 400)
@@ -363,46 +366,31 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     batch_state["is_running"] = True
                     batch_state["logs"] = []
                     batch_state["progress"] = 0.0
-                    batch_state["status_msg"] = "Đang chuẩn bị dịch..."
+                    batch_state["status_msg"] = "Đang chuẩn bị dịch đa luồng..."
 
                 try:
-                    def status_cb(msg, pct):
+                    def status_cb(msg, pct, cur_cnt=0, total_cnt=0):
                         with batch_lock:
                             batch_state["status_msg"] = msg
                             batch_state["progress"] = pct
+                            batch_state["current_index"] = cur_cnt
+                            batch_state["total_files"] = total_cnt
                             batch_state["logs"].append(msg)
-                            if len(batch_state["logs"]) > 100:
+                            if len(batch_state["logs"]) > 150:
                                 batch_state["logs"].pop(0)
 
-                    # Hỗ trợ LLM trong Batch Translate
-                    if "gemini" in model_name.lower() or "deepseek" in model_name.lower():
-                        files = batch_proc.get_txt_files(input_folder)
-                        total = len(files)
-                        for i, fpath in enumerate(files, 1):
-                            if not batch_state["is_running"]:
-                                break
-                            fname = os.path.basename(fpath)
-                            status_cb(f"[{i}/{total}] Đang dịch {fname} với {model_name}...", round((i/total)*100, 1))
-                            with open(fpath, "r", encoding="utf-8", errors="ignore") as fp:
-                                content = fp.read()
-                            trans = llm_trans.translate(content, engine=model_name, dict_entries=dict_mgr.entries)
-                            base, ext = os.path.splitext(fname)
-                            out_file = os.path.join(output_folder, f"{base}{suffix}{ext}")
-                            with open(out_file, "w", encoding="utf-8") as fp:
-                                fp.write(trans)
-                        status_cb("Hoàn tất dịch toàn bộ thư mục!", 100.0)
-                    else:
-                        translator.opencc_enabled = opencc_enabled
-                        if translator.current_model_key != model_name or translator.translator is None:
-                            translator.load_model(model_name)
-                        batch_proc.process_folder(
-                            input_folder=input_folder,
-                            output_folder=output_folder,
-                            beam_size=beam_size,
-                            batch_size=batch_size,
-                            suffix_output=suffix,
-                            status_callback=status_cb
-                        )
+                    batch_proc.process_folder(
+                        input_folder=input_folder,
+                        output_folder=output_folder,
+                        model_name=model_name,
+                        beam_size=beam_size,
+                        batch_size=batch_size,
+                        opencc_enabled=opencc_enabled,
+                        suffix_output=suffix,
+                        concurrency=concurrency,
+                        auto_clean_censor=auto_clean,
+                        status_callback=status_cb
+                    )
                 except Exception as e:
                     with batch_lock:
                         batch_state["status_msg"] = f"Lỗi: {str(e)}"
@@ -836,6 +824,78 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 clean_folder_state["is_running"] = False
                 clean_folder_state["status_msg"] = "Đang dừng làm sạch..."
             self._send_json({"status": "stopping"})
+
+        elif path == "/glossary/extract":
+            text = req.get("text", "")
+            method = req.get("method", "auto") # auto, rule, llm
+            engine = req.get("engine", "gemini")
+            min_count = int(req.get("min_count", 1))
+
+            if not text.strip():
+                self._send_json({"entities": [], "count": 0})
+                return
+
+            try:
+                if method == "llm":
+                    entities = glossary_extractor.extract_with_llm(text, engine=engine)
+                elif method == "auto":
+                    # Tự động: nếu có key thì dùng LLM, nếu không dùng rule
+                    cfg = llm_trans.load_config()
+                    has_key = bool(cfg.get("gemini_api_key")) or bool(cfg.get("deepseek_api_key"))
+                    if has_key:
+                        entities = glossary_extractor.extract_with_llm(text, engine=engine)
+                    else:
+                        entities = glossary_extractor.extract_candidates_rule_based(text, min_count=min_count)
+                else:
+                    entities = glossary_extractor.extract_candidates_rule_based(text, min_count=min_count)
+
+                self._send_json({"entities": entities, "count": len(entities)})
+            except Exception as e:
+                self._send_json({"error": str(e), "entities": [], "count": 0}, 500)
+
+        elif path == "/glossary/batch_add":
+            entries = req.get("entries", [])
+            if not isinstance(entries, list):
+                self._send_json({"error": "Dữ liệu không hợp lệ"}, 400)
+                return
+
+            added = glossary_extractor.add_to_names(entries)
+            # Nạp lại từ điển vào bộ nhớ
+            dict_mgr.load()
+            self._send_json({"success": True, "added": added, "total": len(dict_mgr.entries)})
+
+        elif path == "/glossary/lookup":
+            term = req.get("text", "").strip()
+            hv = glossary_extractor.to_hanviet(term)
+            in_dict = term in dict_mgr.entries
+            val = dict_mgr.entries.get(term, "")
+            self._send_json({
+                "term": term,
+                "hanviet": hv,
+                "in_dict": in_dict,
+                "dict_val": val
+            })
+
+        elif path == "/bilingual/align":
+            src_text = req.get("src", "")
+            tgt_text = req.get("tgt", "")
+
+            src_paras = [p.strip() for p in src_text.split("\n") if p.strip()]
+            tgt_paras = [p.strip() for p in tgt_text.split("\n") if p.strip()]
+            max_p = max(len(src_paras), len(tgt_paras))
+
+            pairs = []
+            for i in range(max_p):
+                s_para = src_paras[i] if i < len(src_paras) else ""
+                t_para = tgt_paras[i] if i < len(tgt_paras) else ""
+                hv_para = glossary_extractor.to_hanviet(s_para) if s_para else ""
+                pairs.append({
+                    "index": i + 1,
+                    "src": s_para,
+                    "hanviet": hv_para,
+                    "tgt": t_para
+                })
+            self._send_json({"pairs": pairs, "count": len(pairs)})
 
         else:
             self._send_json({"error": "Not found"}, 404)
