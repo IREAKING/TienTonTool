@@ -45,6 +45,10 @@ mac_tool/*.log
 *.exe
 *.dll
 
+# Go binaries & temporary outputs
+extract_terms
+thuat_ngu_*.txt
+
 # Wails build output & old aliases
 wails_dichtruyen/build/bin/
 DichTruyen.app/
