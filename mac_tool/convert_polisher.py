@@ -719,10 +719,11 @@ class ConvertPolisher:
         engine: str = "deepseek",
         genre: str = "xianxia",
         api_key: Optional[str] = None,
-        dict_entries: Optional[Dict[str, str]] = None
+        dict_entries: Optional[Dict[str, str]] = None,
+        custom_prompt: Optional[str] = None
     ) -> str:
-        """Xử lý bằng AI LLM (DeepSeek / Gemini) với prompt văn học chuyên sâu"""
-        system_prompt = CONVERT_PROMPTS.get(genre, CONVERT_PROMPTS["xianxia"])
+        """Xử lý bằng AI LLM (DeepSeek / Gemini / Custom Model) với prompt văn học chuyên sâu"""
+        system_prompt = (custom_prompt and custom_prompt.strip()) or CONVERT_PROMPTS.get(genre, CONVERT_PROMPTS["xianxia"])
         
         # Thêm từ điển tùy chọn nếu có
         dict_hint = ""
@@ -752,17 +753,16 @@ class ConvertPolisher:
                     break
 
         if custom_cfg:
-            # Chạy qua Universal OpenAI-compatible client của LLMTranslator
+            # Chạy qua Universal OpenAI-compatible client của LLMTranslator với Prompt Convert chuyên dụng
             model_copy = dict(custom_cfg)
             if api_key:
                 model_copy["api_key"] = api_key
-            # Sử dụng Prompt chuyên cho Convert, nếu model có prompt riêng thì kết hợp
-            conv_prompt = model_copy.get("system_prompt", "").strip() or system_prompt
-            model_copy["system_prompt"] = conv_prompt
             return self.llm.translate_openai_compatible(
                 model_cfg=model_copy,
-                text=f"Chuyển đoạn văn bản convert sau thành truyện dịch văn học hoàn chỉnh:\n\n{text}",
-                dict_entries=dict_entries
+                text=text,
+                dict_entries=dict_entries,
+                system_prompt=system_prompt,
+                user_prompt_prefix="Chuyển thể và gọt giũa đoạn văn bản convert sau thành truyện dịch văn học hoàn chỉnh:\n\n"
             )
 
         if "gemini" in engine.lower():
@@ -821,7 +821,8 @@ class ConvertPolisher:
         engine: str = "gemini",
         genre: str = "xianxia",
         api_key: Optional[str] = None,
-        dict_entries: Optional[Dict[str, str]] = None
+        dict_entries: Optional[Dict[str, str]] = None,
+        custom_prompt: Optional[str] = None
     ) -> str:
         """
         Chế độ Hybrid Thông Minh (Smart Selective Routing):
@@ -855,7 +856,8 @@ class ConvertPolisher:
                 engine=engine,
                 genre=genre,
                 api_key=api_key,
-                dict_entries=dict_entries
+                dict_entries=dict_entries,
+                custom_prompt=custom_prompt
             )
             # 4. Khôi phục lại các bảng chỉ số
             for idx, panel in enumerate(panels):
@@ -872,15 +874,16 @@ class ConvertPolisher:
         engine: str = "deepseek",
         genre: str = "xianxia",
         api_key: Optional[str] = None,
-        dict_entries: Optional[Dict[str, str]] = None
+        dict_entries: Optional[Dict[str, str]] = None,
+        custom_prompt: Optional[str] = None
     ) -> str:
         """Hàm điều hướng tổng quát: rules, ai hoặc hybrid"""
         if mode == "rules":
             return self.polish_rules(text)
         elif mode == "ai":
-            return self.polish_ai(text, engine=engine, genre=genre, api_key=api_key, dict_entries=dict_entries)
+            return self.polish_ai(text, engine=engine, genre=genre, api_key=api_key, dict_entries=dict_entries, custom_prompt=custom_prompt)
         elif mode == "hybrid":
-            return self.polish_hybrid(text, engine=engine, genre=genre, api_key=api_key, dict_entries=dict_entries)
+            return self.polish_hybrid(text, engine=engine, genre=genre, api_key=api_key, dict_entries=dict_entries, custom_prompt=custom_prompt)
         else:
             return self.polish_rules(text)
 
@@ -895,6 +898,7 @@ class ConvertPolisher:
         engine: str = "deepseek",
         genre: str = "xianxia",
         suffix: str = "_dich",
+        custom_prompt: Optional[str] = None,
         status_callback: Optional[Callable[[str, float, str, int, int], None]] = None
     ):
         self._is_stopped = False
@@ -944,7 +948,8 @@ class ConvertPolisher:
                     text=content,
                     mode=mode,
                     engine=engine,
-                    genre=genre
+                    genre=genre,
+                    custom_prompt=custom_prompt
                 )
                 base, ext = os.path.splitext(fname)
                 out_path = os.path.join(output_folder, f"{base}{suffix}{ext}")

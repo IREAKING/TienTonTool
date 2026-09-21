@@ -430,12 +430,36 @@
                             <option value="romance">🌸 Ngôn Tình / Nữ Tần (Sâu lắng, tinh tế)</option>
                         </select>
                     </div>
+                    <div class="option-item" id="convert-prompt-btn-wrapper" style="display: none;">
+                        <button id="btn-toggle-convert-prompt" class="btn-secondary ripple" style="font-size: 12px; padding: 7px 12px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Xem và tùy chỉnh Prompt hướng dẫn AI gọt giũa văn phong Convert">
+                            📝 Tùy Chỉnh Prompt AI
+                        </button>
+                    </div>
                 </div>
                 <button id="btn-convert-polish-now" class="btn-primary ripple glow-button" style="background: linear-gradient(135deg, #0ea5e9, #6366f1);">
                     <span class="btn-icon">✨</span>
                     <span class="btn-label">Chuyển Sang Truyện Dịch</span>
                     <div class="btn-shimmer"></div>
                 </button>
+            </div>
+
+            <!-- Khung chỉnh sửa Prompt Convert (Collapsible) -->
+            <div id="convert-prompt-drawer" class="glass-card" style="display: none; margin-top: 14px; padding: 16px; border: 1px dashed rgba(56, 189, 248, 0.4); background: rgba(15, 23, 42, 0.85); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 14px; font-weight: 700; color: #38bdf8;">🧠 System Prompt Gọt Giũa Convert Sang Dịch</span>
+                        <span class="badge-neon" style="font-size: 10px;">AI INSTRUCTION</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btn-reset-convert-prompt" class="btn-tool ripple" style="font-size: 11px;" title="Khôi phục Prompt chuẩn theo thể loại đang chọn">🔄 Khôi phục mặc định</button>
+                        <button id="btn-save-convert-prompt" class="btn-tool ripple" style="font-size: 11px; color: #34d399; border-color: rgba(52, 211, 153, 0.4);" title="Lưu prompt này làm mặc định cho các lần sau">💾 Lưu Prompt</button>
+                        <button id="btn-close-convert-prompt" class="btn-tool ripple" style="font-size: 11px;">✖ Đóng</button>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                    Chỉ thị này quyết định cách AI gọt giũa văn phong, xưng hô và các quy tắc giữ lại. Bạn có thể tự do chỉnh sửa, thêm tên nhân vật, bối cảnh bộ truyện hoặc phong cách dịch yêu thích:
+                </p>
+                <textarea id="convert-custom-prompt" style="width: 100%; min-height: 140px; font-size: 12px; font-family: monospace; line-height: 1.5; background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 6px; color: #e2e8f0; padding: 10px;" placeholder="Đang tải prompt..."></textarea>
             </div>
 
             <!-- PHẦN 2: CHUYỂN ĐỔI HÀNG LOẠT THEO THƯ MỤC -->
@@ -502,6 +526,10 @@
                         <span>🚀</span>
                         <span>Bắt Đầu Chuyển Đổi Hàng Loạt</span>
                         <div class="btn-shimmer"></div>
+                    </button>
+                    <button id="btn-toggle-batch-convert-prompt" class="btn-secondary ripple" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: none;" title="Xem / Tùy chỉnh Prompt cho dịch hàng loạt">
+                        <span>📝</span>
+                        <span>Tùy Chỉnh Prompt AI</span>
                     </button>
                     <button id="btn-clean-batch-folder" class="btn-secondary ripple" style="border-color: #34d399; color: #34d399;" title="Chỉ khử các ký tự rác (c·hết ➔ chết, g·iết ➔ giết, b·ạo đ·ộng ➔ bạo động) và xóa watermark cho toàn bộ thư mục mà không đổi văn phong">
                         <span>🧹</span>

@@ -248,7 +248,9 @@ class LLMTranslator:
         self,
         model_cfg: Dict[str, Any],
         text: str,
-        dict_entries: Optional[Dict[str, str]] = None
+        dict_entries: Optional[Dict[str, str]] = None,
+        system_prompt: Optional[str] = None,
+        user_prompt_prefix: Optional[str] = None
     ) -> str:
         """Dịch văn bản qua chuẩn OpenAI-Compatible API với mọi nhà cung cấp AI"""
         base_url = model_cfg.get("base_url", "").strip().rstrip("/")
@@ -258,10 +260,11 @@ class LLMTranslator:
         temperature = float(model_cfg.get("temperature", 0.3))
         max_tokens = int(model_cfg.get("max_tokens", 8192))
 
+        if not base_url:
+            raise ValueError(f"Model '{model_cfg.get('name')}' chưa được cấu hình Base URL API.")
         if not model:
-            raise ValueError(f"Model ID không được rỗng ({model_cfg.get('name')})")
+            raise ValueError(f"Model '{model_cfg.get('name')}' chưa được cấu hình Model ID.")
 
-        # Xác định URL
         if base_url.endswith("/chat/completions"):
             endpoint = base_url
         elif base_url.endswith("/v1"):
@@ -276,14 +279,19 @@ class LLMTranslator:
             headers["Authorization"] = f"Bearer {api_key}"
 
         dict_hint = self._build_dict_prompt(dict_entries)
-        base_prompt = self.get_effective_prompt(model_cfg)
+        if system_prompt and system_prompt.strip():
+            base_prompt = system_prompt.strip()
+        else:
+            base_prompt = self.get_effective_prompt(model_cfg)
         sys_prompt = f"{base_prompt}\n{dict_hint}" if dict_hint else base_prompt
+
+        prefix = user_prompt_prefix if user_prompt_prefix is not None else "Dịch nội dung sau sang tiếng Việt mượt mà, văn phong tiên hiệp tự nhiên:\n\n"
 
         payload = {
             "model": model,
             "messages": [
                 {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": f"Dịch nội dung sau sang tiếng Việt mượt mà, văn phong tiên hiệp tự nhiên:\n\n{text}"}
+                {"role": "user", "content": f"{prefix}{text}"}
             ],
             "temperature": temperature,
             "max_tokens": max_tokens

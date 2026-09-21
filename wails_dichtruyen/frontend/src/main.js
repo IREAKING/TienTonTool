@@ -644,12 +644,12 @@ class ServiceBridge {
         }
     }
 
-    static async polishConvert(text, mode = "rules", engine = "deepseek", genre = "xianxia") {
+    static async polishConvert(text, mode = "rules", engine = "deepseek", genre = "xianxia", prompt = "") {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/convert/polish`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, mode, engine, genre })
+                body: JSON.stringify({ text, mode, engine, genre, prompt })
             });
             return await resp.json();
         } catch (e) {
@@ -658,7 +658,7 @@ class ServiceBridge {
         }
     }
 
-    static async startBatchConvert(inputFolder, outputFolder, mode = "rules", engine = "deepseek", genre = "xianxia", suffix = "_dich") {
+    static async startBatchConvert(inputFolder, outputFolder, mode = "rules", engine = "deepseek", genre = "xianxia", suffix = "_dich", prompt = "") {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/convert/batch_start`, {
                 method: "POST",
@@ -669,12 +669,37 @@ class ServiceBridge {
                     mode,
                     engine,
                     genre,
-                    suffix
+                    suffix,
+                    prompt
                 })
             });
             return await resp.json();
         } catch (e) {
             console.error("Lỗi startBatchConvert:", e);
+            return { error: String(e) };
+        }
+    }
+
+    static async getConvertPrompts() {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/convert/prompts`);
+            if (resp.ok) return await resp.json();
+        } catch (e) {
+            console.error("Lỗi getConvertPrompts:", e);
+        }
+        return { prompts: {}, saved_prompt: "" };
+    }
+
+    static async saveConvertPrompt(prompt) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/convert/save_prompt`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi saveConvertPrompt:", e);
             return { error: String(e) };
         }
     }
@@ -1132,11 +1157,115 @@ function initConvert() {
     const modelSelect = document.getElementById("convert-model-select");
     const genreSelect = document.getElementById("convert-genre-select");
 
+    const promptBtnWrapper = document.getElementById("convert-prompt-btn-wrapper");
+    const btnTogglePrompt = document.getElementById("btn-toggle-convert-prompt");
+    const btnToggleBatchPrompt = document.getElementById("btn-toggle-batch-convert-prompt");
+    const promptDrawer = document.getElementById("convert-prompt-drawer");
+    const promptTextarea = document.getElementById("convert-custom-prompt");
+    const btnResetPrompt = document.getElementById("btn-reset-convert-prompt");
+    const btnSavePrompt = document.getElementById("btn-save-convert-prompt");
+    const btnClosePrompt = document.getElementById("btn-close-convert-prompt");
+
+    let defaultConvertPrompts = {
+        xianxia: `Bạn là một đại dịch giả văn học kỳ cựu chuyên dịch và biên tập tiểu thuyết Tiên Hiệp, Kiếm Hiệp, Cổ Phong Trung Quốc sang tiếng Việt.\nNHIỆM VỤ: Chuyển đổi đoạn văn bản CONVERT (bản dịch thô / Vietphrase / Hán Việt khô cứng) bên dưới thành một BẢN DỊCH TIỂU THUYẾT VĂN HỌC MƯỢT MÀ, HÀO SẢNG, ĐẬM CHẤT TIÊN HIỆP.\n\nYÊU CẦU BẮT BUỘC:\n1. Triệt để xóa bỏ cấu trúc câu ngữ pháp lai căng tiếng Trung (như: "tại... bên trong", "nương theo lấy", "thời gian dần qua", "cái này một cái", "bị người...").\n2. Giọng văn hào sảng, cổ phong, uy vũ, câu từ trau chuốt, giàu hình tượng, nhịp văn dứt khoát trong cảnh chiến đấu và sâu lắng trong cảnh tâm trạng.\n3. Tuyệt đối giữ chuẩn xác các danh từ riêng: tên nhân vật, địa danh, môn phái, công pháp bí tịch, linh đan, pháp bảo, cảnh giới tu luyện (Luyện Khí, Trúc Cơ, Kim Đan, Nguyên Anh...).\n4. Giữ đúng xưng hô Hán Việt: hắn, nàng, y, lão nhân gia, bổn tọa, tiền bối, vãn bối, sư huynh, sư muội, đạo hữu...\n5. Giữ nguyên cấu trúc đoạn văn bản và toàn bộ lời thoại. Nếu gặp thẻ bảng chỉ số <<<SYSTEM_PANEL_X>>>, giữ nguyên không xóa.\n6. CHỈ TRẢ VỀ NỘI DUNG BẢN DỊCH, không thêm bất kỳ lời bình luận hay giải thích nào.`,
+        fantasy: `Bạn là một đại dịch giả văn học chuyên nghiệp về tiểu thuyết Huyền Huyễn, Dị Giới, Ma Huyễn Tây Phương.\nNHIỆM VỤ: Chuyển đổi đoạn văn bản CONVERT thô cứng bên dưới thành một BẢN DỊCH TIỂU THUYẾT KỊCH TÍNH, MƯỢT MÀ VÀ CUỐN HÚT.\n\nYÊU CẦU BẮT BUỘC:\n1. Biến các câu cú convert khô cứng thành câu văn tiếng Việt trôi chảy, tự nhiên, sinh động.\n2. Tiết tấu dồn dập, gay cấn, khắc họa rõ nét các cảnh ma pháp, đấu khí, triệu hoán thú và chiến trường khốc liệt.\n3. Giữ nguyên tên nhân vật, cấp bậc chức nghiệp, trang bị ma pháp, bảng chỉ số game nếu có.\n4. Giữ nguyên đoạn hội thoại và ngắt dòng. Nếu gặp thẻ <<<SYSTEM_PANEL_X>>>, giữ nguyên không đổi.\n5. CHỈ TRẢ VỀ DUY NHẤT BẢN DỊCH ĐÃ BIÊN TẬP.`,
+        urban: `Bạn là một dịch giả tiểu thuyết Đô Thị, Hiện Đại, Dị Năng chuyên nghiệp.\nNHIỆM VỤ: Chuyển đổi đoạn văn bản CONVERT bên dưới thành BẢN DỊCH VĂN PHONG HIỆN ĐẠI, TỰ NHIÊN, MƯỢT MÀ.\n\nYÊU CẦU BẮT BUỘC:\n1. Ngôn từ gần gũi, văn phong hiện đại, đối thoại tự nhiên như người Việt nói chuyện hàng ngày, không còn chút dấu vết convert thô.\n2. Giữ nguyên tên nhân vật, địa danh, chức vụ, tình tiết truyện.\n3. Giữ nguyên định dạng đoạn văn.\n4. CHỈ TRẢ VỀ DUY NHẤT BẢN DỊCH TIẾNG VIỆT.`,
+        romance: `Bạn là một dịch giả tiểu thuyết Ngôn Tình, Cổ Đại, Nữ Tần xuất sắc.\nNHIỆM VỤ: Chuyển đổi văn bản CONVERT bên dưới thành BẢN DỊCH NGÔN TÌNH TINH TẾ, MỀM MẠI VÀ GIÀU CẢM XÚC.\n\nYÊU CẦU BẮT BUỘC:\n1. Văn phong uyển chuyển, tinh tế, giàu nhạc điệu và cảm xúc chân thật.\n2. Lời thoại tình cảm, phù hợp với tính cách nhân vật (dịu dàng, bá đạo, ngạo kiều, bi thương...).\n3. Giữ nguyên xưng hô và các chi tiết cổ phong/hiện đại.\n4. CHỈ TRẢ VỀ DUY NHẤT BẢN DỊCH HOÀN CHỈNH.`
+    };
+    let isPromptUserEdited = false;
+
+    // Tải prompt từ backend nếu có
+    async function loadConvertPrompts() {
+        try {
+            const res = await ServiceBridge.getConvertPrompts();
+            if (res && res.prompts && Object.keys(res.prompts).length > 0) {
+                defaultConvertPrompts = { ...defaultConvertPrompts, ...res.prompts };
+            }
+            if (res && res.saved_prompt && res.saved_prompt.trim()) {
+                if (promptTextarea) promptTextarea.value = res.saved_prompt.trim();
+                isPromptUserEdited = true;
+            } else {
+                updatePromptByGenre();
+            }
+        } catch (e) {
+            updatePromptByGenre();
+        }
+    }
+
+    function updatePromptByGenre() {
+        if (!promptTextarea) return;
+        if (isPromptUserEdited) return;
+        const curGenre = (genreSelect && genreSelect.value) || "xianxia";
+        promptTextarea.value = defaultConvertPrompts[curGenre] || defaultConvertPrompts["xianxia"];
+    }
+
+    loadConvertPrompts();
+
+    if (genreSelect) {
+        genreSelect.addEventListener("change", () => {
+            updatePromptByGenre();
+        });
+    }
+
+    if (promptTextarea) {
+        promptTextarea.addEventListener("input", () => {
+            isPromptUserEdited = true;
+        });
+    }
+
+    function togglePromptDrawer() {
+        if (!promptDrawer) return;
+        const isHidden = promptDrawer.style.display === "none";
+        promptDrawer.style.display = isHidden ? "block" : "none";
+        if (isHidden) {
+            promptDrawer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }
+
+    if (btnTogglePrompt) {
+        btnTogglePrompt.addEventListener("click", togglePromptDrawer);
+    }
+    if (btnToggleBatchPrompt) {
+        btnToggleBatchPrompt.addEventListener("click", togglePromptDrawer);
+    }
+    if (btnClosePrompt) {
+        btnClosePrompt.addEventListener("click", () => {
+            if (promptDrawer) promptDrawer.style.display = "none";
+        });
+    }
+    if (btnResetPrompt) {
+        btnResetPrompt.addEventListener("click", () => {
+            const curGenre = (genreSelect && genreSelect.value) || "xianxia";
+            if (promptTextarea) {
+                promptTextarea.value = defaultConvertPrompts[curGenre] || defaultConvertPrompts["xianxia"];
+            }
+            isPromptUserEdited = false;
+            showToast("Đã khôi phục Prompt chuẩn cho thể loại " + curGenre, "info", 2000);
+        });
+    }
+    if (btnSavePrompt) {
+        btnSavePrompt.addEventListener("click", async () => {
+            if (!promptTextarea) return;
+            const p = promptTextarea.value.trim();
+            btnSavePrompt.disabled = true;
+            try {
+                await ServiceBridge.saveConvertPrompt(p);
+                showToast("Đã lưu Prompt Convert làm mặc định!", "success", 2000);
+            } catch (err) {
+                showToast("Lỗi lưu prompt: " + err, "error");
+            } finally {
+                btnSavePrompt.disabled = false;
+            }
+        });
+    }
+
     function updateConvertModeVisibility() {
-        if (!modeSelect || !modelWrapper) return;
+        if (!modeSelect) return;
         const val = modeSelect.value;
         const needsAi = (val === "hybrid" || val === "ai");
-        modelWrapper.style.display = needsAi ? "" : "none";
+        if (modelWrapper) modelWrapper.style.display = needsAi ? "" : "none";
+        if (promptBtnWrapper) promptBtnWrapper.style.display = needsAi ? "" : "none";
+        if (!needsAi && promptDrawer) promptDrawer.style.display = "none";
     }
     if (modeSelect) {
         modeSelect.addEventListener("change", updateConvertModeVisibility);
@@ -1254,7 +1383,8 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
 
             const startT = performance.now();
             try {
-                const res = await ServiceBridge.polishConvert(text, mode, engine, genre);
+                const customPrompt = promptTextarea ? promptTextarea.value.trim() : "";
+                const res = await ServiceBridge.polishConvert(text, mode, engine, genre, customPrompt);
                 const elapsed = ((performance.now() - startT) / 1000).toFixed(2);
                 timeBadge.textContent = `⚡ ${res.time !== undefined ? res.time : elapsed}s`;
 
@@ -1327,10 +1457,11 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
     const btnBatchStop = document.getElementById("btn-convert-batch-stop");
 
     function updateBatchConvertModeVisibility() {
-        if (!batchModeSelect || !batchModelWrapper) return;
+        if (!batchModeSelect) return;
         const val = batchModeSelect.value;
         const needsAi = (val === "hybrid" || val === "ai");
-        batchModelWrapper.style.display = needsAi ? "" : "none";
+        if (batchModelWrapper) batchModelWrapper.style.display = needsAi ? "" : "none";
+        if (btnToggleBatchPrompt) btnToggleBatchPrompt.style.display = needsAi ? "" : "none";
     }
     if (batchModeSelect) {
         batchModeSelect.addEventListener("change", updateBatchConvertModeVisibility);
@@ -1381,7 +1512,8 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
             btnBatchStop.disabled = false;
 
             try {
-                const res = await ServiceBridge.startBatchConvert(inF, outF, mode, engine, genre, suffix);
+                const customPrompt = promptTextarea ? promptTextarea.value.trim() : "";
+                const res = await ServiceBridge.startBatchConvert(inF, outF, mode, engine, genre, suffix, customPrompt);
                 if (res.error) {
                     showToast("Lỗi khởi chạy: " + res.error, "error");
                     btnBatchStart.disabled = false;

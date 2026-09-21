@@ -230,6 +230,12 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 "default_prompt": llm_trans.get_default_system_prompt(),
                 "global_prompt": llm_trans.config.get("global_system_prompt", "")
             })
+        elif path == "/convert/prompts":
+            from convert_polisher import CONVERT_PROMPTS
+            self._send_json({
+                "prompts": CONVERT_PROMPTS,
+                "saved_prompt": llm_trans.config.get("convert_system_prompt", "")
+            })
         elif path == "/settings":
             cfg = llm_trans.load_config()
             gemini_k = cfg.get("gemini_api_key", "")
@@ -762,6 +768,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             mode = req.get("mode", "rules")
             engine = req.get("engine", "deepseek")
             genre = req.get("genre", "xianxia")
+            custom_prompt = req.get("prompt", "").strip()
 
             if not text.strip():
                 self._send_json({"result": "", "error": "Văn bản rỗng"})
@@ -774,7 +781,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     mode=mode,
                     engine=engine,
                     genre=genre,
-                    dict_entries=dict_mgr.entries
+                    dict_entries=dict_mgr.entries,
+                    custom_prompt=custom_prompt
                 )
                 elapsed = time.time() - start_t
                 self._send_json({"result": result, "time": round(elapsed, 2)})
@@ -788,6 +796,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             engine = req.get("engine", "deepseek")
             genre = req.get("genre", "xianxia")
             suffix = req.get("suffix", "_dich")
+            custom_prompt = req.get("prompt", "").strip()
 
             if not os.path.isdir(input_folder):
                 self._send_json({"error": "Thư mục nguồn không hợp lệ"}, 400)
@@ -819,6 +828,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                         engine=engine,
                         genre=genre,
                         suffix=suffix,
+                        custom_prompt=custom_prompt,
                         status_callback=status_cb
                     )
                 except Exception as e:
@@ -838,6 +848,12 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 batch_convert_state["is_running"] = False
                 batch_convert_state["status_msg"] = "Đang dừng chuyển đổi..."
             self._send_json({"status": "stopping"})
+
+        elif path == "/convert/save_prompt":
+            p = req.get("prompt", "")
+            llm_trans.config["convert_system_prompt"] = p
+            llm_trans.save_config(llm_trans.config)
+            self._send_json({"success": True})
 
         elif path == "/clean_text":
             text = req.get("text", "")
