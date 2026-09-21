@@ -655,26 +655,31 @@ class ConvertPolisher:
         full_prompt = f"{system_prompt}\n{dict_hint}\nĐoạn văn bản Convert cần chuyển sang truyện dịch:\n\n{text}"
 
         if "gemini" in engine.lower():
-            key = api_key or self.llm.config.get("gemini_api_key", "").strip()
+            key = api_key or os.environ.get("GEMINI_API_KEY", "").strip() or self.llm.config.get("gemini_api_key", "").strip()
             if not key:
-                raise ValueError("Chưa thiết lập Gemini API Key. Vui lòng cấu hình trong Cài Đặt.")
+                raise ValueError("Chưa thiết lập Gemini API Key. Vui lòng cấu hình trong mac_tool/config.json hoặc truyền biến môi trường GEMINI_API_KEY.")
             import requests
             model = "gemini-2.0-flash" if "2.0" in engine else "gemini-1.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
             payload = {
                 "contents": [{"parts": [{"text": full_prompt}]}],
-                "generationConfig": {"temperature": 0.4, "maxOutputTokens": 8192}
+                "generationConfig": {"temperature": 0.35, "maxOutputTokens": 8192}
             }
             resp = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=90)
             if resp.status_code != 200:
                 raise RuntimeError(f"Lỗi Gemini API ({resp.status_code}): {resp.text}")
             data = resp.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            try:
+                candidate = data["candidates"][0]
+                text_out = candidate["content"]["parts"][0]["text"].strip()
+                return text_out
+            except Exception as e:
+                raise RuntimeError(f"Lỗi đọc kết quả Gemini: {data}")
 
         elif "deepseek" in engine.lower():
-            key = api_key or self.llm.config.get("deepseek_api_key", "").strip()
+            key = api_key or os.environ.get("DEEPSEEK_API_KEY", "").strip() or self.llm.config.get("deepseek_api_key", "").strip()
             if not key:
-                raise ValueError("Chưa thiết lập DeepSeek API Key. Vui lòng cấu hình trong Cài Đặt.")
+                raise ValueError("Chưa thiết lập DeepSeek API Key. Vui lòng cấu hình trong mac_tool/config.json hoặc truyền biến môi trường DEEPSEEK_API_KEY.")
             import requests
             url = "https://api.deepseek.com/chat/completions"
             headers = {
@@ -687,7 +692,7 @@ class ConvertPolisher:
                     {"role": "system", "content": system_prompt + dict_hint},
                     {"role": "user", "content": f"Chuyển đoạn văn bản convert sau thành truyện dịch văn học hoàn chỉnh:\n\n{text}"}
                 ],
-                "temperature": 0.4,
+                "temperature": 0.35,
                 "stream": False
             }
             resp = requests.post(url, headers=headers, json=payload, timeout=90)
@@ -702,20 +707,52 @@ class ConvertPolisher:
     def polish_hybrid(
         self,
         text: str,
-        engine: str = "deepseek",
+        engine: str = "gemini",
         genre: str = "xianxia",
         api_key: Optional[str] = None,
         dict_entries: Optional[Dict[str, str]] = None
     ) -> str:
-        """Chế độ Hybrid: Lọc thô bằng Rules Engine -> Trau chuốt đỉnh cao bằng AI"""
+        """
+        Chế độ Hybrid Thông Minh (Smart Selective Routing):
+        1. Bước 1: Dùng Rules Engine tiền xử lý và khử 85% lỗi ngữ pháp convert thô.
+        2. Bước 2: Tự động trích xuất các bảng thuộc tính game/chỉ số (【...】) để khóa offline, không tốn token AI.
+        3. Bước 3: Đưa văn bản tự sự và đối thoại vào AI LLM (Gemini/DeepSeek) để trau chuốt cảm xúc, văn phong.
+        4. Bước 4: Khôi phục các bảng thuộc tính và chuẩn hóa dấu câu lần cuối.
+        Nếu API AI gặp sự cố hoặc chưa có key, tự động fallback về bản Rules sạch đẹp 100%.
+        """
+        if not text:
+            return ""
+
+        # 1. Tiền xử lý sạch bằng Rules Engine
         cleaned_text = self.rules_engine.polish(text)
-        return self.polish_ai(
-            text=cleaned_text,
-            engine=engine,
-            genre=genre,
-            api_key=api_key,
-            dict_entries=dict_entries
-        )
+
+        # 2. Khóa bảng chỉ số game / thông báo thuộc tính
+        panel_pattern = re.compile(r'((?:^\s*[【\[][^】\]\n]+[】\]][^\n]*\n?)+)', re.MULTILINE)
+        panels = []
+
+        def panel_repl(m):
+            idx = len(panels)
+            panels.append(m.group(1).strip())
+            return f"\n\n<<<SYSTEM_PANEL_{idx}>>>\n\n"
+
+        masked_text = panel_pattern.sub(panel_repl, cleaned_text)
+
+        # 3. Gửi cho AI trau chuốt (với chỉ thị bảo toàn các thẻ <<<SYSTEM_PANEL_X>>>)
+        try:
+            ai_polished = self.polish_ai(
+                text=masked_text,
+                engine=engine,
+                genre=genre,
+                api_key=api_key,
+                dict_entries=dict_entries
+            )
+            # 4. Khôi phục lại các bảng chỉ số
+            for idx, panel in enumerate(panels):
+                ai_polished = ai_polished.replace(f"<<<SYSTEM_PANEL_{idx}>>>", panel)
+            return self.rules_engine._capitalize_sentences(ai_polished)
+        except Exception as e:
+            print(f"⚠️ Hybrid AI ({engine}): {e}. Chuyển sang dự phòng Offline chất lượng cao.")
+            return cleaned_text
 
     def polish(
         self,

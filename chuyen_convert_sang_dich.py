@@ -57,7 +57,7 @@ def read_file_safe(file_path: str) -> str:
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read()
 
-def process_single_file(file_path: str, out_path: str, mode: str = "rules", engine: str = "deepseek", genre: str = "xianxia"):
+def process_single_file(file_path: str, out_path: str, mode: str = "rules", engine: str = "gemini", genre: str = "xianxia", api_key: str = None):
     content = read_file_safe(file_path)
     if not content.strip():
         return 0, 0
@@ -67,7 +67,8 @@ def process_single_file(file_path: str, out_path: str, mode: str = "rules", engi
         text=content,
         mode=mode,
         engine=engine,
-        genre=genre
+        genre=genre,
+        api_key=api_key
     )
     word_count_out = len(translated.split())
 
@@ -85,8 +86,9 @@ def main():
     parser.add_argument("--out", "-o", help="Thư mục xuất kết quả truyện dịch (mặc định: <input>_dich)")
     parser.add_argument("--mode", "-m", choices=["rules", "ai", "hybrid"], default="rules",
                         help="Chế độ xử lý: rules (siêu tốc offline), ai (dùng LLM), hybrid (kết hợp). Mặc định: rules")
-    parser.add_argument("--engine", "-e", choices=["deepseek", "gemini"], default="deepseek",
-                        help="Mô hình AI khi dùng mode ai/hybrid (deepseek / gemini)")
+    parser.add_argument("--engine", "-e", choices=["gemini", "deepseek"], default="gemini",
+                        help="Mô hình AI khi dùng mode ai/hybrid (gemini / deepseek). Mặc định: gemini")
+    parser.add_argument("--api-key", "-k", help="API Key của Gemini hoặc DeepSeek (có thể dùng biến môi trường GEMINI_API_KEY hoặc config.json)")
     parser.add_argument("--genre", "-g", choices=["xianxia", "fantasy", "urban", "romance"], default="xianxia",
                         help="Thể loại truyện (xianxia: Tiên hiệp, fantasy: Huyền huyễn, urban: Đô thị, romance: Ngôn tình)")
     parser.add_argument("--workers", "-w", type=int, default=8, help="Số luồng xử lý đồng thời (mặc định: 8)")
@@ -119,7 +121,7 @@ def main():
         print(f"📄 Xử lý file: {fname}")
         print(f"⚙️  Chế độ: {args.mode.upper()} | Thể loại: {args.genre}")
         t0 = time.time()
-        win, wout = process_single_file(target_path, out_path, mode=args.mode, engine=args.engine, genre=args.genre)
+        win, wout = process_single_file(target_path, out_path, mode=args.mode, engine=args.engine, genre=args.genre, api_key=args.api_key)
         t1 = time.time()
         print(f"✅ Hoàn thành trong {t1 - t0:.2f}s ({win} từ -> {wout} từ)")
         print(f"📂 Đã lưu tại: {out_path}")
@@ -207,7 +209,7 @@ def main():
             in_file = os.path.join(input_folder, fname)
             out_file = os.path.join(output_folder, fname)
             try:
-                win, wout = process_single_file(in_file, out_file, mode=args.mode, engine=args.engine, genre=args.genre)
+                win, wout = process_single_file(in_file, out_file, mode=args.mode, engine=args.engine, genre=args.genre, api_key=args.api_key)
                 return True, wout, fname, None
             except Exception as e:
                 return False, 0, fname, str(e)
