@@ -53,9 +53,9 @@ class TextCleaner:
         self.re_zero_width = re.compile(r'[\u200b\u200c\u200d\ufeff\u00ad\u2060\u200e\u200f]')
 
         # 2. Middle dot, bullet, sao, gạch chéo, caret, ngã chèn giữa các chữ cái
-        # Ví dụ: c·hết, g·iết, b·ạo, đ·ộng, s*á*t, đ/ộc, b_ắ_n, c•hết, c‧hết
+        # Ví dụ: c·hết, g·iết, b·ạo, đ·ộng, s*á*t, đ/ộc, b_ắ_n, c•hết, c‧hết (nhưng giữ nguyên 86/100, 6/22)
         self.re_intra_censor = re.compile(
-            r'(?<=[a-zA-ZÀ-ỹ0-9])\s*[·•‧∙・･\*\~^\/|_]+\s*(?=[a-zA-ZÀ-ỹ0-9])'
+            r'(?<=[a-zA-ZÀ-ỹ])\s*[·•‧∙・･\*\~^\/|_]+\s*(?=[a-zA-ZÀ-ỹ])|(?<=[a-zA-ZÀ-ỹ0-9])\s*[·•‧∙・･~^]+\s*(?=[a-zA-ZÀ-ỹ0-9])'
         )
 
         # 3. Dấu chấm hoặc gạch nối chèn giữa các chữ cái tiếng Việt
@@ -147,10 +147,12 @@ class TextCleaner:
         text = re.sub(r'[ \t]+', ' ', text)
         # Khoảng trắng trước dấu câu
         text = re.sub(r' +([,.;:!?])', r'\1', text)
-        # Cách sau dấu câu
-        text = re.sub(r'([,.;:!?])(?=[^\s"\'\)])', r'\1 ', text)
+        # Cách sau dấu câu (tránh chèn vào giữa các dấu chấm của dấu ba chấm ...)
+        text = re.sub(r'([,;:!?])(?=[^\s"\'\)])|(?<!\.)\.(?!\.)(?=[^\s"\'\)])', r'\1 ', text)
         # Dấu chấm lửng
+        text = re.sub(r'(?:\.[ \t]*){2,}\.?', '...', text)
         text = re.sub(r'\.{4,}', '...', text)
+        text = re.sub(r'\.\.\.([a-zA-ZÀ-ỹ])', r'... \1', text)
         # Xuống dòng thừa
         text = re.sub(r'\n\s*\n+', '\n\n', text)
 
