@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Tiên Tôn Tool - Dịch Truyện & Biên Tập AI Pro</title>
+    <link rel="stylesheet" href="./main.css"/>
+</head>
+<body>
+<!-- AMBIENT BACKGROUND GLOWS -->
+<div class="ambient-glow ambient-1"></div>
+<div class="ambient-glow ambient-2"></div>
+<div class="ambient-glow ambient-3"></div>
+<div class="cyber-grid"></div>
+
+<div class="app-container">
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="app-brand">
+            <div class="brand-icon-wrapper">
+                <span class="brand-icon">⚡</span>
+                <div class="brand-glow"></div>
+            </div>
+            <div class="brand-text">
+                <h2>Tiên Tôn Tool</h2>
+                <span class="badge-mac">TIÊN TÔN PRO</span>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <button class="nav-item active" data-tab="tab-text">
+                <span class="nav-icon">📝</span>
+                <span class="nav-label">Dịch văn bản</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-batch">
+                <span class="nav-icon">📁</span>
+                <span class="nav-label">Dịch hàng loạt</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-convert">
+                <span class="nav-icon">✨</span>
+                <span class="nav-label">Chuyển Convert</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-scraper">
+                <span class="nav-icon">🕷️</span>
+                <span class="nav-label">Cào truyện (Scraper)</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-tts">
+                <span class="nav-icon">🎧</span>
+                <span class="nav-label">Sách Nói Audio (TTS)</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-dict">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label">Từ điển & Names</span>
+                <span class="nav-indicator"></span>
+            </button>
+            <button class="nav-item" data-tab="tab-settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Mô hình AI</span>
+                <span class="nav-indicator"></span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="status-hud">
+                <div class="status-dot-wrapper">
+                    <span class="status-dot"></span>
+                    <span class="status-ring"></span>
+                    <span class="status-ring-2"></span>
+                </div>
+                <div class="status-hud-text">
+                    <span id="global-status" class="status-title">ĐANG KẾT NỐI...</span>
+                    <span id="global-model" class="status-sub">CTranslate2 int8</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- TAB 1: DỊCH VĂN BẢN -->
+        <section id="tab-text" class="tab-pane active">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Dịch Nhanh Văn Bản</h3>
+                        <span class="badge-neon">SMART DE-HALLUCINATION</span>
+                    </div>
+                    <p class="header-subtitle">Dán tiếng Trung và nhận bản dịch tiếng Việt mượt mà tức thì với mô hình CTranslate2 offline</p>
+                </div>
+                <div class="header-actions">
+                    <span id="trans-time" class="time-badge">⚡ 0.00s</span>
+                </div>
+            </div>
+
+            <div class="translate-grid">
+                <!-- Cột nguồn -->
+                <div class="text-box-card glass-card">
+                    <div class="box-header">
+                        <div class="box-title-wrapper">
+                            <span class="box-badge box-badge-zh">🇨🇳 NGUỒN</span>
+                            <span class="box-title">Tiếng Trung Gốc</span>
+                        </div>
+                        <div class="box-tools">
+                            <button id="btn-clean-src" class="btn-tool ripple" title="Khử ký tự rác chèn né kiểm duyệt (c·hết ➔ chết, g·iết ➔ giết, b·ạo đ·ộng ➔ bạo động)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);">🧹 Khử Rác</button>
+                            <button id="btn-paste-src" class="btn-tool ripple">📋 Dán</button>
+                            <button id="btn-clear-src" class="btn-tool ripple">🗑️ Xóa</button>
+                        </div>
+                    </div>
+                    <textarea id="src-text" placeholder="Dán văn bản tiếng Trung (tiên hiệp, kiếm hiệp, huyền huyễn, đô thị) vào đây..."></textarea>
+                    <div class="box-footer">
+                        <span id="src-counter">0 ký tự</span>
+                        <span class="box-hint">Hỗ trợ Phồn thể & Giản thể</span>
+                    </div>
+                </div>
+
+                <!-- Cột đích -->
+                <div class="text-box-card glass-card">
+                    <div class="box-header">
+                        <div class="box-title-wrapper">
+                            <span class="box-badge box-badge-vi">🇻🇳 BẢN DỊCH</span>
+                            <span class="box-title">Tiếng Việt Mượt Mà</span>
+                        </div>
+                        <div class="box-tools">
+                            <button id="btn-listen-tgt" class="btn-tool ripple" title="Chuyển bản dịch sang Audio TTS" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🎧 Đọc Audio</button>
+                            <button id="btn-copy-tgt" class="btn-tool ripple">📋 Sao chép</button>
+                        </div>
+                    </div>
+                    <textarea id="tgt-text" placeholder="Bản dịch tiếng Việt chuẩn văn phong tiểu thuyết sẽ xuất hiện ở đây..." readonly></textarea>
+                    <div class="box-footer">
+                        <span id="tgt-counter">0 từ</span>
+                        <span class="box-hint">Tự động đối chiếu khử lặp</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar glass-card">
+                <div class="action-options">
+                    <div class="option-item">
+                        <label>Mô hình AI:</label>
+                        <select id="quick-model-select" class="animated-select">
+                            <option value="DanVP/MoxhiMT-60 (Đỉnh Cao Tiên Hiệp - Văn phong đỉnh cao)" selected>DanVP/MoxhiMT-60 (Đỉnh Cao Tiên Hiệp - Khuyên dùng)</option>
+                            <option value="robebo116/60-zh-vi (Văn phong mượt - Khuyên dùng)">robebo116/60-zh-vi (Văn phong mượt - Offline)</option>
+                            <option value="ngocdang83/HachimiMT-60-QT (Convert Phong Cách QuickTranslator Chuẩn)">ngocdang83/HachimiMT-60-QT (Convert QT Chuẩn)</option>
+                            <option value="robebo116/QT (Phong cách QuickTranslator / Convert)">robebo116/QT (Phong cách QT)</option>
+                            <option value="ngocdang83/HachimiMT-60-zh-vi">ngocdang83/HachimiMT-60-zh-vi</option>
+                            <option value="Gemini 1.5 Flash (Google AI - Nhanh & Mượt)">Gemini 1.5 Flash (Google AI - Mượt mà)</option>
+                            <option value="DeepSeek-V3 (AI Văn Học - Chuẩn xác cao)">DeepSeek-V3 (AI Văn Học - Chuẩn xác)</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>Độ sâu Beam:</label>
+                        <select id="quick-beam-select" class="animated-select">
+                            <option value="1">1 (Tốc độ tối đa)</option>
+                            <option value="2" selected>2 (Cân bằng khuyên dùng)</option>
+                            <option value="4">4 (Chuẩn xác sâu)</option>
+                        </select>
+                    </div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="quick-opencc" checked/>
+                        <span class="checkbox-custom"></span>
+                        <span>Phồn thể ➔ Giản thể</span>
+                    </label>
+                </div>
+                <button id="btn-translate-now" class="btn-primary ripple glow-button">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-label">Bắt đầu dịch</span>
+                    <div class="btn-shimmer"></div>
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: DỊCH HÀNG LOẠT -->
+        <section id="tab-batch" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Dịch Hàng Loạt Theo Thư Mục</h3>
+                        <span class="badge-neon">MULTI-ENCODING ENGINE</span>
+                    </div>
+                    <p class="header-subtitle">Tự động đọc, giải mã (GB18030/GBK/UTF-8) và xuất toàn bộ chương truyện sang tiếng Việt</p>
+                </div>
+            </div>
+
+            <div class="card-form glass-card">
+                <div class="form-group">
+                    <label>Thư mục nguồn (Chứa các file .txt chương truyện):</label>
+                    <div class="input-with-button">
+                        <input type="text" id="batch-input-folder" placeholder="/Users/.../chuong_goc"/>
+                        <button id="btn-select-input-folder" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Thư mục xuất kết quả (Để trống sẽ lưu vào thư mục mac_tool/exports):</label>
+                    <div class="input-with-button">
+                        <input type="text" id="batch-output-folder" placeholder="Mặc định: exports/"/>
+                        <button id="btn-select-output-folder" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Hậu tố tên file dịch:</label>
+                        <input type="text" id="batch-suffix" value="_viet" placeholder="VD: _viet -> 100_viet.txt"/>
+                    </div>
+                    <div class="form-group half">
+                        <label>Mô hình áp dụng:</label>
+                        <select id="batch-model-select" class="animated-select">
+                            <option value="DanVP/MoxhiMT-60 (Đỉnh Cao Tiên Hiệp - Văn phong đỉnh cao)" selected>DanVP/MoxhiMT-60 (Đỉnh Cao Tiên Hiệp - Khuyên dùng)</option>
+                            <option value="robebo116/60-zh-vi (Văn phong mượt - Khuyên dùng)">robebo116/60-zh-vi (Văn phong mượt - Offline)</option>
+                            <option value="ngocdang83/HachimiMT-60-QT (Convert Phong Cách QuickTranslator Chuẩn)">ngocdang83/HachimiMT-60-QT (Convert QT Chuẩn)</option>
+                            <option value="robebo116/QT (Phong cách QuickTranslator / Convert)">robebo116/QT (Phong cách QT)</option>
+                            <option value="ngocdang83/HachimiMT-60-zh-vi">ngocdang83/HachimiMT-60-zh-vi</option>
+                            <option value="Gemini 1.5 Flash (Google AI - Nhanh & Mượt)">Gemini 1.5 Flash (Google AI - Mượt mà)</option>
+                            <option value="DeepSeek-V3 (AI Văn Học - Chuẩn xác cao)">DeepSeek-V3 (AI Văn Học - Chuẩn xác)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="batch-controls">
+                    <button id="btn-scan-folder" class="btn-secondary ripple">🔍 Quét & Đếm file</button>
+                    <button id="btn-start-batch" class="btn-primary ripple glow-button">
+                        <span>⚡</span>
+                        <span>Bắt Đầu Dịch Hàng Loạt</span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                    <button id="btn-stop-batch" class="btn-danger ripple" disabled>🛑 Dừng Lại</button>
+                </div>
+
+                <!-- Tiến độ -->
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <div class="progress-title-group">
+                            <span class="progress-label">Tiến trình thực hiện:</span>
+                            <span id="batch-status-text" class="progress-status">Chưa bắt đầu</span>
+                        </div>
+                        <span id="batch-percentage" class="percentage-badge">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="batch-progress-bar" class="progress-bar-fill" style="width: 0%">
+                            <div class="progress-laser"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cyber Terminal Log -->
+                <div class="log-box-card">
+                    <div class="log-header">
+                        <div class="terminal-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <span>📟 NHẬT KÝ XỬ LÝ (REAL-TIME STREAM)</span>
+                        <span class="log-indicator"></span>
+                    </div>
+                    <div id="batch-log-content" class="log-content">Sẵn sàng. Chọn thư mục nguồn và bắt đầu dịch.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: CHUYỂN CONVERT SANG TRUYỆN DỊCH -->
+        <section id="tab-convert" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Chuyển Đổi Convert Thành Truyện Dịch</h3>
+                        <span class="badge-neon" style="color: #38bdf8; border-color: #38bdf8;">DUAL POLISH ENGINE</span>
+                    </div>
+                    <p class="header-subtitle">
+                        Biến bản convert (Vietphrase / QuickTranslator / Hán Việt thô cứng) thành truyện dịch văn học mượt mà, chuẩn văn phong tiểu thuyết bằng Quy tắc Siêu Tốc (Offline) hoặc AI Văn Học (DeepSeek / Gemini).
+                    </p>
+                </div>
+                <div class="header-actions">
+                    <span id="convert-time" class="time-badge">⚡ 0.00s</span>
+                </div>
+            </div>
+
+            <!-- PHẦN 1: CHUYỂN ĐỔI TRỰC TIẾP VĂN BẢN -->
+            <div class="translate-grid">
+                <!-- Cột nguồn: Văn bản Convert -->
+                <div class="text-box-card glass-card">
+                    <div class="box-header">
+                        <div class="box-title-wrapper">
+                            <span class="box-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">📜 NGUỒN CONVERT</span>
+                            <span class="box-title">Convert / Vietphrase Thô</span>
+                        </div>
+                        <div class="box-tools">
+                            <button id="btn-convert-sample" class="btn-tool ripple" title="Chèn đoạn văn convert mẫu để thử nghiệm">📝 Đoạn mẫu</button>
+                            <button id="btn-clean-decensor" class="btn-tool ripple" title="Làm sạch ký tự rác chèn né kiểm duyệt (c·hết ➔ chết, g·iết ➔ giết, b·ạo đ·ộng ➔ bạo động)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);">🧹 Khử Ký Tự Rác (c·hết➔chết)</button>
+                            <button id="btn-paste-convert" class="btn-tool ripple">📋 Dán</button>
+                            <button id="btn-clear-convert" class="btn-tool ripple">🗑️ Xóa</button>
+                        </div>
+                    </div>
+                    <textarea id="convert-src-text" placeholder="Dán đoạn văn bản Convert (Vietphrase, QuickTranslator, Hán Việt thô...) cần gọt giũa vào đây..."></textarea>
+                    <div class="box-footer">
+                        <span id="convert-src-counter">0 ký tự</span>
+                        <span class="box-hint">Tự động xóa tật ngữ pháp lai tiếng Trung</span>
+                    </div>
+                </div>
+
+                <!-- Cột đích: Bản Dịch Văn Học -->
+                <div class="text-box-card glass-card">
+                    <div class="box-header">
+                        <div class="box-title-wrapper">
+                            <span class="box-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">✨ BẢN DỊCH CHUẨN</span>
+                            <span class="box-title">Truyện Dịch Mượt Mà</span>
+                        </div>
+                        <div class="box-tools">
+                            <button id="btn-convert-to-tts" class="btn-tool ripple" title="Gửi bản dịch sang Sách Nói TTS" style="color: #c084fc; border-color: rgba(192, 132, 252, 0.4);">🎧 Đọc Audio</button>
+                            <button id="btn-copy-convert-tgt" class="btn-tool ripple">📋 Sao chép</button>
+                        </div>
+                    </div>
+                    <textarea id="convert-tgt-text" placeholder="Bản dịch văn học mượt mà, loại bỏ hoàn toàn tật convert sẽ xuất hiện ở đây..." readonly></textarea>
+                    <div class="box-footer">
+                        <span id="convert-tgt-counter">0 từ</span>
+                        <span class="box-hint">Chuẩn văn phong tiểu thuyết thuần Việt</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thanh điều khiển chuyển đổi văn bản -->
+            <div class="action-bar glass-card">
+                <div class="action-options">
+                    <div class="option-item">
+                        <label>Động cơ gọt giũa (Engine):</label>
+                        <select id="convert-mode-select" class="animated-select">
+                            <option value="rules" selected>⚡ Quy tắc Siêu Tốc (Offline 100% - Tức thì - Miễn phí)</option>
+                            <option value="hybrid">🌟 Hybrid (Lọc Quy Tắc + AI Trau Chuốt)</option>
+                            <option value="ai-deepseek">🧠 AI Văn Học: DeepSeek-V3 (Chuẩn xác cao)</option>
+                            <option value="ai-gemini">🤖 AI Văn Học: Gemini 1.5 Flash (Nhanh & Mượt)</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>Giọng văn / Thể loại:</label>
+                        <select id="convert-genre-select" class="animated-select">
+                            <option value="xianxia" selected>⚔️ Tiên Hiệp / Kiếm Hiệp (Hào sảng, cổ phong)</option>
+                            <option value="fantasy">🔮 Huyền Huyễn / Dị Giới (Gay cấn, kịch tính)</option>
+                            <option value="urban">🏙️ Đô Thị / Hiện Đại (Tự nhiên, dí dỏm)</option>
+                            <option value="romance">🌸 Ngôn Tình / Nữ Tần (Sâu lắng, tinh tế)</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="btn-convert-polish-now" class="btn-primary ripple glow-button" style="background: linear-gradient(135deg, #0ea5e9, #6366f1);">
+                    <span class="btn-icon">✨</span>
+                    <span class="btn-label">Chuyển Sang Truyện Dịch</span>
+                    <div class="btn-shimmer"></div>
+                </button>
+            </div>
+
+            <!-- PHẦN 2: CHUYỂN ĐỔI HÀNG LOẠT THEO THƯ MỤC -->
+            <div class="card-form glass-card" style="margin-top: 24px;">
+                <div class="header-title-group" style="margin-bottom: 12px;">
+                    <div class="title-with-badge">
+                        <h4>📁 Chuyển Đổi Hàng Loạt File Convert Theo Thư Mục</h4>
+                        <span class="badge-neon" style="color: #38bdf8; border-color: #38bdf8;">BATCH CONVERT TO NOVEL</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                        Tự động quét toàn bộ các file .txt chương convert trong thư mục và chuyển đổi thành truyện dịch mượt mà hàng loạt.
+                    </p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Thư mục chứa các chương Convert (.txt):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="convert-batch-input-folder" placeholder="/Users/.../chuong_convert"/>
+                            <button id="btn-select-convert-input-folder" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                        </div>
+                    </div>
+                    <div class="form-group half">
+                        <label>Thư mục lưu chương Dịch hoàn chỉnh:</label>
+                        <div class="input-with-button">
+                            <input type="text" id="convert-batch-output-folder" placeholder="Để trống để lưu vào mac_tool/exports/dich_convert"/>
+                            <button id="btn-select-convert-output-folder" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group third">
+                        <label>Động cơ xử lý hàng loạt:</label>
+                        <select id="convert-batch-mode-select" class="animated-select">
+                            <option value="rules" selected>⚡ Quy tắc Siêu Tốc (Khuyên dùng - Cực nhanh)</option>
+                            <option value="hybrid">🌟 Hybrid (Quy Tắc + AI)</option>
+                            <option value="ai-deepseek">🧠 AI DeepSeek-V3 (Cần API Key)</option>
+                            <option value="ai-gemini">🤖 AI Gemini 1.5 Flash (Cần API Key)</option>
+                        </select>
+                    </div>
+                    <div class="form-group third">
+                        <label>Giọng văn / Thể loại:</label>
+                        <select id="convert-batch-genre-select" class="animated-select">
+                            <option value="xianxia" selected>⚔️ Tiên Hiệp / Kiếm Hiệp</option>
+                            <option value="fantasy">🔮 Huyền Huyễn / Dị Giới</option>
+                            <option value="urban">🏙️ Đô Thị / Hiện Đại</option>
+                            <option value="romance">🌸 Ngôn Tình / Nữ Tần</option>
+                        </select>
+                    </div>
+                    <div class="form-group third">
+                        <label>Hậu tố tên file xuất:</label>
+                        <input type="text" id="convert-batch-suffix" value="_dich" placeholder="_dich"/>
+                    </div>
+                </div>
+
+                <div class="batch-controls">
+                    <button id="btn-convert-batch-start" class="btn-primary ripple glow-button" style="background: linear-gradient(135deg, #0ea5e9, #6366f1);">
+                        <span>🚀</span>
+                        <span>Bắt Đầu Chuyển Đổi Hàng Loạt</span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                    <button id="btn-clean-batch-folder" class="btn-secondary ripple" style="border-color: #34d399; color: #34d399;" title="Chỉ khử các ký tự rác (c·hết ➔ chết, g·iết ➔ giết, b·ạo đ·ộng ➔ bạo động) và xóa watermark cho toàn bộ thư mục mà không đổi văn phong">
+                        <span>🧹</span>
+                        <span>Chỉ Khử Rác Thư Mục (Giữ Nguyên Văn)</span>
+                    </button>
+                    <button id="btn-convert-batch-stop" class="btn-danger ripple" disabled>🛑 Dừng Tiến Trình</button>
+                </div>
+
+                <!-- Thanh tiến trình hàng loạt -->
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <div class="progress-title-group">
+                            <span class="progress-label">Tiến độ chuyển đổi:</span>
+                            <span id="convert-progress-status" class="progress-status">Sẵn sàng</span>
+                        </div>
+                        <span id="convert-progress-pct" class="percentage-badge">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="convert-progress-bar" class="progress-bar-fill" style="width: 0%; background: linear-gradient(90deg, #0ea5e9, #6366f1);"></div>
+                    </div>
+                </div>
+
+                <!-- Cyber Terminal Log -->
+                <div class="log-box-card">
+                    <div class="log-header">
+                        <div class="terminal-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <span>📟 NHẬT KÝ CHUYỂN ĐỔI CONVERT ➔ DỊCH (STREAM)</span>
+                        <span class="log-indicator"></span>
+                    </div>
+                    <div id="convert-log-content" class="log-content">Sẵn sàng chuyển đổi các file convert thành truyện dịch.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CÀO TRUYỆN (SCRAPER) -->
+        <section id="tab-scraper" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Cào Truyện Tự Động (Web Novel Scraper)</h3>
+                        <span class="badge-neon">AUTO-CRAWLER & TRANSLATE</span>
+                    </div>
+                    <p class="header-subtitle">Tự động cào chương truyện từ web Trung Quốc, hỗ trợ nhận diện mã hoá và cào dịch khép kín</p>
+                </div>
+            </div>
+
+            <div class="card-form glass-card">
+                <!-- Preset & URL -->
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Chọn trang truyện mẫu (Preset):</label>
+                        <select id="scraper-preset-select" class="animated-select">
+                            <option value="sangtacviet.app">sangtacviet.app (Tự động chuyển nguồn gốc Fanqie/69shu/UU...)</option>
+                            <option value="fanqienovel.com">fanqienovel.com (番茄小说 - Fanqie / Cà Chua)</option>
+                            <option value="tvtruyen.live">tvtruyen.live (Truyện TV - Full Tiếng Việt)</option>
+                            <option value="truyenhoan.com">truyenhoan.com (Truyện Hoàn - Full Tiếng Việt)</option>
+                            <option value="ihuliwang.net" selected>ihuliwang.net (Hồ Ly Mạng - Mặc định)</option>
+                            <option value="69shu.me">69shu.me (69 Thư Ba)</option>
+                            <option value="biquge">biquge (Bút Khúc Các / 5200)</option>
+                            <option value="uukanshu">uukanshu (UU Đọc Sách)</option>
+                            <option value="custom">Tùy chỉnh (Nhập selector thủ công)</option>
+                        </select>
+                    </div>
+                    <div class="form-group half">
+                        <label>Link chương đầu tiên cần cào (Start URL):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="scraper-url" placeholder="https://www.ihuliwang.net/1582_1582589/read/2049.html" value="https://www.ihuliwang.net/1582_1582589/read/2049.html"/>
+                            <button id="btn-test-scraper" class="btn-secondary ripple">🔍 Thử cào 1 chương</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Preview Modal / Card -->
+                <div id="scraper-test-preview" class="test-preview-card" style="display: none;">
+                    <div class="preview-header">
+                        <span id="preview-title" class="preview-title">Tiêu đề chương</span>
+                        <span id="preview-next" class="preview-next">Link tiếp theo: ...</span>
+                    </div>
+                    <div id="preview-content" class="preview-body"></div>
+                </div>
+
+                <!-- Selectors -->
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>CSS Selector Tiêu đề (Title):</label>
+                        <input type="text" id="scraper-title-sel" value="div.pt-read-title > h1, h1" placeholder="div.pt-read-title > h1"/>
+                    </div>
+                    <div class="form-group half">
+                        <label>CSS Selector Nội dung (Content):</label>
+                        <input type="text" id="scraper-content-sel" value="div.pt-read-text, div.size16.color5.pt-read-text" placeholder="div.pt-read-text"/>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>CSS Selector Loại trừ (Exclude ads/watermarks):</label>
+                        <input type="text" id="scraper-exclude-sel" value=".pt-read-text p:last-child" placeholder="Để trống nếu không có"/>
+                    </div>
+                    <div class="form-group half">
+                        <label>CSS Selector Chương tiếp theo (Next Chapter):</label>
+                        <input type="text" id="scraper-next-sel" value="a.pt-nextchapter" placeholder="a.pt-nextchapter"/>
+                    </div>
+                </div>
+
+                <div class="form-row" id="scraper-toc-row">
+                    <div class="form-group">
+                        <label>CSS Selector Mục Lục (Dành cho cào đa luồng TOC):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="scraper-toc-sel" value="#list-chapter a, a[href*='chuong-']" placeholder="#list-chapter a, a[href*='chuong-']"/>
+                            <button id="btn-scan-toc" class="btn-secondary ripple">📋 Quét danh sách chương</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chế độ cào & Đa luồng & Resume -->
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Chế độ cào truyện:</label>
+                        <select id="scraper-mode" class="animated-select">
+                            <option value="sequential" selected>Tuần tự (Theo nút Chương Tiếp - Ổn định)</option>
+                            <option value="toc">Đa luồng siêu tốc (Theo danh sách Mục Lục TOC)</option>
+                        </select>
+                    </div>
+                    <div class="form-group half">
+                        <label>Số luồng cào song song (Khi chọn Đa luồng):</label>
+                        <input type="number" id="scraper-concurrency" min="1" max="10" value="4"/>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="scraper-resume" checked/>
+                            <span class="checkbox-custom"></span>
+                            <span style="color: #60a5fa; font-weight: 700;">🔄 Tự động tiếp tục từ chương cũ (Resume - Không cào lại chương đã có trong thư mục)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Output Folder & Limits -->
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Thư mục lưu truyện (Save Folder):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="scraper-save-folder" placeholder="Để trống để lưu vào mac_tool/crawled_novels"/>
+                            <button id="btn-select-scraper-folder" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                        </div>
+                    </div>
+                    <div class="form-group half">
+                        <label>Giới hạn số chương cần cào (0 = Cào đến hết truyện):</label>
+                        <input type="number" id="scraper-max-chapters" min="0" value="0" placeholder="0 để cào hết"/>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Độ trễ giữa mỗi chương (Giây):</label>
+                        <div class="delay-inputs">
+                            <input type="number" id="scraper-wait-min" step="0.5" min="0.5" value="0.5" style="width: 80px;"/>
+                            <span style="color: var(--text-muted);">➔</span>
+                            <input type="number" id="scraper-wait-max" step="0.5" min="1.0" value="1.5" style="width: 80px;"/>
+                            <span style="font-size: 11px; color: var(--text-muted);">(Chống bị chặn IP)</span>
+                        </div>
+                    </div>
+                    <div class="form-group half">
+                        <label>Tự động dịch sang tiếng Việt:</label>
+                        <div class="auto-translate-box">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="scraper-auto-translate"/>
+                                <span class="checkbox-custom"></span>
+                                <span style="color: var(--neon-cyan); font-weight: 700;">⚡ Cào đến đâu, tự dịch tiếng Việt đến đó!</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="batch-controls">
+                    <button id="btn-start-scraper" class="btn-primary ripple glow-button">
+                        <span>🕷️</span>
+                        <span>Bắt Đầu Cào Truyện</span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                    <button id="btn-stop-scraper" class="btn-danger ripple" disabled>🛑 Dừng Cào</button>
+                </div>
+
+                <!-- Tiến độ cào -->
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <div class="progress-title-group">
+                            <span class="progress-label">Tiến trình cào:</span>
+                            <span id="scraper-status-text" class="progress-status">Chưa bắt đầu</span>
+                        </div>
+                        <span id="scraper-count-badge" class="percentage-badge">0 chương</span>
+                    </div>
+                </div>
+
+                <!-- Cyber Terminal Log -->
+                <div class="log-box-card">
+                    <div class="log-header">
+                        <div class="terminal-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <span>📟 NHẬT KÝ CÀO TRUYỆN (REAL-TIME STREAM)</span>
+                        <span class="log-indicator"></span>
+                    </div>
+                    <div id="scraper-log-content" class="log-content">Sẵn sàng cào truyện. Nhập link và bấm Bắt đầu.</div>
+                </div>
+
+                <!-- KHU VỰC ĐÓNG GÓI & XUẤT E-BOOK (EPUB / TXT GỘP) -->
+                <div class="card-form glass-card" style="margin-top: 24px; border: 1px solid rgba(96, 165, 250, 0.35); background: rgba(15, 23, 42, 0.65);">
+                    <div class="header-title-group" style="margin-bottom: 12px;">
+                        <div class="title-with-badge">
+                            <h4>📦 Đóng Gói & Xuất E-Book (EPUB / TXT Gộp)</h4>
+                            <span class="badge-neon" style="color: #60a5fa; border-color: #60a5fa;">APPLE BOOKS & KINDLE</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                            Đóng gói toàn bộ các file .txt chương trong thư mục thành 1 file sách EPUB hoàn chỉnh hoặc 1 file TXT duy nhất.
+                        </p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Thư mục chương truyện cần đóng gói:</label>
+                            <div class="input-with-button">
+                                <input type="text" id="export-folder" placeholder="Chọn thư mục chứa file .txt chương..."/>
+                                <button id="btn-select-export-folder" class="btn-secondary ripple">📂 Chọn</button>
+                            </div>
+                        </div>
+                        <div class="form-group quarter">
+                            <label>Tên truyện:</label>
+                            <input type="text" id="export-title" placeholder="VD: Tiên Võ Đế Tôn"/>
+                        </div>
+                        <div class="form-group quarter">
+                            <label>Tác giả:</label>
+                            <input type="text" id="export-author" placeholder="VD: Lục Giới Tam Nhân" value="Khuyết Danh"/>
+                        </div>
+                    </div>
+
+                    <div class="batch-controls" style="margin-top: 10px;">
+                        <button id="btn-merge-txt" class="btn-secondary ripple" style="font-weight: 600;">
+                            <span>📑</span> Gộp 1 File TXT Duy Nhất
+                        </button>
+                        <button id="btn-export-epub" class="btn-primary ripple glow-button" style="font-weight: 600;">
+                            <span>📱</span> Xuất Sách EPUB Tiêu Chuẩn
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: SÁCH NÓI AUDIO (TTS) -->
+        <section id="tab-tts" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Sách Nói & Chuyển Giọng Đọc (Text To Speech)</h3>
+                        <span class="badge-neon" style="color: #c084fc; border-color: #c084fc;">NEURAL TTS + 17,800+ TỪ ĐIỂN</span>
+                    </div>
+                    <p class="header-subtitle">
+                        Tích hợp từ điển chuẩn hóa phát âm 17,839 từ của XuanAn TTS. Hỗ trợ giọng đọc truyền cảm Microsoft Neural (Nam Minh, Hoài My) và macOS Native (Linh).
+                    </p>
+                </div>
+            </div>
+
+            <!-- PHẦN 1: ĐỌC TRỰC TIẾP & NGHE THỬ -->
+            <div class="card-form glass-card">
+                <div class="box-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+                    <div class="box-title-wrapper">
+                        <span class="box-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">🎙️ TRÌNH PHÁT TRỰC TIẾP</span>
+                        <span class="box-title">Đọc & Nghe Thử Đoạn Văn</span>
+                    </div>
+                    <div class="box-tools">
+                        <button id="btn-tts-paste" class="btn-tool ripple">📋 Dán nội dung</button>
+                        <button id="btn-tts-from-trans" class="btn-tool ripple" style="color: #60a5fa;">📥 Lấy từ Bản Dịch</button>
+                        <button id="btn-tts-clear" class="btn-tool ripple">🗑️ Xóa</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <textarea id="tts-input-text" rows="5" placeholder="Nhập hoặc dán đoạn văn bản tiếng Việt muốn chuyển sang giọng đọc Audio..." style="width: 100%; min-height: 110px; background: rgba(10, 15, 29, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; resize: vertical;"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label style="margin-bottom: 0;">Giọng đọc:</label>
+                            <button id="btn-tts-preview-sample" type="button" class="btn-tool ripple" style="color: #c084fc; font-size: 12px; padding: 2px 10px; border: 1px solid rgba(168,85,247,0.3); border-radius: 4px; background: rgba(168,85,247,0.12); cursor: pointer;" title="Nghe đoạn âm thanh mẫu của nhân vật đã chọn">
+                                🎧 Nghe giọng mẫu
+                            </button>
+                        </div>
+                        <select id="tts-voice-select" class="animated-select">
+                            <optgroup label="🌟 GIỌNG CHUẨN TRUYỀN CẢM (NEURAL)">
+                                <option value="vi-VN-NamMinhNeural" selected>Nam Minh (Giọng Nam - Truyền Cảm / Tiên Hiệp)</option>
+                                <option value="vi-VN-HoaiMyNeural">Hoài My (Giọng Nữ - Truyền Cảm / Ngôn Tình)</option>
+                                <option value="macos-linh">Linh (macOS Native - Offline 100%)</option>
+                            </optgroup>
+                        </select>
+                        <audio id="tts-sample-preview-player" style="display: none;"></audio>
+                    </div>
+                    <div class="form-group quarter">
+                        <label>Tốc độ đọc:</label>
+                        <select id="tts-speed-select" class="animated-select">
+                            <option value="0.85">0.85x (Chậm rãi, truyền cảm)</option>
+                            <option value="1.0">1.0x (Tự nhiên chuẩn)</option>
+                            <option value="1.1" selected>1.1x (Khuyên dùng nghe truyện)</option>
+                            <option value="1.2">1.2x (Hơi nhanh)</option>
+                            <option value="1.35">1.35x (Nhanh tiết kiệm thời gian)</option>
+                        </select>
+                    </div>
+                    <div class="form-group quarter" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="tts-normalize-check" checked/>
+                            <span class="checkbox-custom"></span>
+                            <span style="font-size: 13px;">Chuẩn hóa phát âm</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="batch-controls" style="margin-top: 10px; display: flex; gap: 12px; align-items: center;">
+                    <button id="btn-tts-speak-now" class="btn-primary ripple glow-button" style="background: linear-gradient(135deg, #9333ea, #6366f1);">
+                        <span class="btn-icon">▶️</span>
+                        <span class="btn-label">Bắt Đầu Đọc / Tạo Audio</span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                    <a id="btn-tts-download-now" class="btn-secondary ripple" style="display: none; text-decoration: none;" download="audiobook.mp3" target="_blank">
+                        <span>💾 Tải File MP3</span>
+                    </a>
+                    <span id="tts-player-status" style="font-size: 13px; color: var(--text-muted); margin-left: 8px;"></span>
+                </div>
+
+                <!-- Custom Audio Player Container -->
+                <div id="tts-audio-container" style="display: none; margin-top: 16px; padding: 14px; background: rgba(15, 23, 42, 0.8); border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 13px; font-weight: 600; color: #c084fc;">🎧 Đang phát: <span id="tts-audio-filename" style="color: #fff;">audio.mp3</span></span>
+                        <span id="tts-audio-duration" style="font-size: 12px; color: var(--text-muted);">00:00</span>
+                    </div>
+                    <audio id="tts-audio-player" controls style="width: 100%; outline: none; border-radius: 6px;"></audio>
+                </div>
+            </div>
+
+            <!-- PHẦN 2: XUẤT AUDIOBOOK HÀNG LOẠT -->
+            <div class="card-form glass-card" style="margin-top: 24px;">
+                <div class="header-title-group" style="margin-bottom: 12px;">
+                    <div class="title-with-badge">
+                        <h4>📁 Chuyển Đổi Hàng Loạt Thư Mục Sang Audiobook (.MP3)</h4>
+                        <span class="badge-neon" style="color: #10b981; border-color: #10b981;">MULTI-CHAPTER RENDER</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                        Tự động đọc toàn bộ các file .txt chương truyện đã dịch trong thư mục và xuất thành từng file MP3 tương ứng (chuong_001.mp3, chuong_002.mp3...).
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label>Thư mục nguồn (Chứa các file chương .txt đã dịch):</label>
+                    <div class="input-with-button">
+                        <input type="text" id="batch-tts-input-folder" placeholder="Chọn thư mục chứa file .txt chương..."/>
+                        <button id="btn-select-batch-tts-input" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Thư mục xuất Audio (Mặc định lưu vào mac_tool/exports/audiobooks):</label>
+                    <div class="input-with-button">
+                        <input type="text" id="batch-tts-output-folder" placeholder="Mặc định: exports/audiobooks"/>
+                        <button id="btn-select-batch-tts-output" class="btn-secondary ripple">📂 Chọn thư mục</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label style="margin-bottom: 0;">Giọng đọc áp dụng:</label>
+                            <button id="btn-batch-tts-preview-sample" type="button" class="btn-tool ripple" style="color: #10b981; font-size: 12px; padding: 2px 10px; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; background: rgba(16,185,129,0.12); cursor: pointer;" title="Nghe đoạn âm thanh mẫu của nhân vật đã chọn">
+                                🎧 Nghe giọng mẫu
+                            </button>
+                        </div>
+                        <select id="batch-tts-voice-select" class="animated-select">
+                            <optgroup label="🌟 GIỌNG CHUẨN TRUYỀN CẢM (NEURAL)">
+                                <option value="vi-VN-NamMinhNeural" selected>Nam Minh (Giọng Nam - Truyền Cảm / Tiên Hiệp)</option>
+                                <option value="vi-VN-HoaiMyNeural">Hoài My (Giọng Nữ - Truyền Cảm / Ngôn Tình)</option>
+                                <option value="macos-linh">Linh (macOS Native - Offline 100%)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group quarter">
+                        <label>Tốc độ đọc:</label>
+                        <select id="batch-tts-speed-select" class="animated-select">
+                            <option value="0.85">0.85x (Chậm rãi, truyền cảm)</option>
+                            <option value="1.0">1.0x (Tự nhiên chuẩn)</option>
+                            <option value="1.1" selected>1.1x (Khuyên dùng nghe truyện)</option>
+                            <option value="1.2">1.2x (Hơi nhanh)</option>
+                            <option value="1.35">1.35x (Nhanh tiết kiệm thời gian)</option>
+                        </select>
+                    </div>
+                    <div class="form-group quarter" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="batch-tts-normalize-check" checked/>
+                            <span class="checkbox-custom"></span>
+                            <span style="font-size: 13px;">Chuẩn hóa phát âm</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="batch-controls">
+                    <button id="btn-batch-tts-scan" class="btn-secondary ripple">🔍 Quét & Đếm file</button>
+                    <button id="btn-batch-tts-start" class="btn-primary ripple glow-button" style="background: linear-gradient(135deg, #059669, #10b981);">
+                        <span>⚡</span>
+                        <span>Bắt Đầu Tạo Audiobook</span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                    <button id="btn-batch-tts-stop" class="btn-danger ripple" disabled>🛑 Dừng Lại</button>
+                </div>
+
+                <!-- Tiến độ Batch TTS -->
+                <div class="progress-section" style="margin-top: 20px;">
+                    <div class="progress-header">
+                        <div class="progress-title-group">
+                            <span class="progress-label">Tiến độ xuất Audio:</span>
+                            <span id="batch-tts-status-text" class="progress-file">Sẵn sàng</span>
+                        </div>
+                        <span id="batch-tts-percentage" class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-wrapper">
+                        <div id="batch-tts-progress-bar" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #9333ea, #10b981);"></div>
+                    </div>
+                </div>
+
+                <!-- Log Stream Batch TTS -->
+                <div class="log-stream-card glass-card" style="margin-top: 15px;">
+                    <div class="log-stream-header">
+                        <div class="log-stream-title">
+                            <span class="log-icon">🎧</span>
+                            <span>NHẬT KÝ TẠO AUDIOBOOK (STREAM)</span>
+                        </div>
+                        <span class="log-indicator"></span>
+                    </div>
+                    <div id="batch-tts-log-content" class="log-content">Sẵn sàng tạo Audiobook. Chọn thư mục và bấm Bắt đầu.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TỪ ĐIỂN & TÊN RIÊNG -->
+        <section id="tab-dict" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Quản Lý Từ Điển & Tên Riêng (Names)</h3>
+                        <span class="badge-neon">UNICODE MASKING ENGINE</span>
+                    </div>
+                    <p class="header-subtitle">Bảo vệ tuyệt đối tên nhân vật, địa danh, công pháp bằng cơ chế mã hóa Unicode an toàn</p>
+                </div>
+            </div>
+
+            <div class="dict-container">
+                <!-- Thêm nhanh -->
+                <div class="quick-add-card glass-card">
+                    <div class="form-row">
+                        <input type="text" id="dict-src-input" placeholder="Từ gốc tiếng Trung (VD: 苏阳 hoặc 混沌珠)"/>
+                        <input type="text" id="dict-tgt-input" placeholder="Từ dịch tiếng Việt (VD: Tô Dương hoặc Hỗn Độn Châu)"/>
+                        <button id="btn-add-dict-entry" class="btn-primary ripple">➕ Thêm vào từ điển</button>
+                    </div>
+                </div>
+
+                <!-- Trình soạn thảo file names.txt -->
+                <div class="dict-editor-card glass-card">
+                    <div class="editor-header">
+                        <span>📄 File names.txt (Định dạng: TừGốc=TừDịch)</span>
+                        <div class="editor-actions">
+                            <button id="btn-reload-dict" class="btn-tool ripple">🔄 Tải lại</button>
+                            <button id="btn-save-dict" class="btn-secondary ripple">💾 Lưu thay đổi</button>
+                        </div>
+                    </div>
+                    <textarea id="dict-content-area" spellcheck="false"></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: CÀI ĐẶT & MÔ HÌNH -->
+        <section id="tab-settings" class="tab-pane">
+            <div class="pane-header">
+                <div class="header-title-group">
+                    <div class="title-with-badge">
+                        <h3>Quản Lý Mô Hình & Tối Ưu Hóa AI</h3>
+                        <span class="badge-neon">CTRANSLATE2 INT8</span>
+                    </div>
+                    <p class="header-subtitle">Cấu hình luồng tính toán, kích thước mẻ dịch và trạng thái mô hình offline</p>
+                </div>
+            </div>
+
+            <div class="settings-card glass-card">
+                <h4>Danh Sách Mô Hình Sẵn Sàng Trong Máy:</h4>
+                <div id="model-cards-container" class="model-cards-list"></div>
+
+                <h4 style="margin-top: 28px;">Tùy Chỉnh Thông Số Xử Lý:</h4>
+                <div class="settings-grid">
+                    <div class="setting-item glass-card-sm">
+                        <label>Kích thước mẻ dịch (Batch Size):</label>
+                        <select id="setting-batch-size" class="animated-select">
+                            <option value="8">8 (Tiết kiệm RAM & CPU)</option>
+                            <option value="16" selected>16 (Khuyên dùng - Cân bằng tốt)</option>
+                            <option value="32">32 (Tối đa hiệu năng cho chip M-series)</option>
+                        </select>
+                        <span class="setting-desc">Số câu dịch song song cùng lúc trong một chu kỳ suy luận CTranslate2.</span>
+                    </div>
+                    <div class="setting-item glass-card-sm">
+                        <label>Thuật toán khử lặp (De-hallucination):</label>
+                        <div class="setting-toggle-row">
+                            <span class="badge-success">✓ TỰ ĐỘNG ĐỐI CHIẾU CÂU GỐC</span>
+                        </div>
+                        <span class="setting-desc">Tự động phân tích câu gốc tiếng Trung: Nếu văn bản gốc lặp lại (VD: 快跑！快跑！) thì dịch lặp, nếu không thì triệt tiêu hoàn toàn hiện tượng ảo giác lặp câu của MarianMT.</span>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 28px;">🔑 Cấu Hình API Key Cho AI LLM (Gemini / DeepSeek):</h4>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                    Dịch văn học chất lượng đỉnh cao bằng mô hình AI trực tuyến. API Key được lưu an toàn tại máy cục bộ.
+                </p>
+                <div class="settings-grid">
+                    <div class="setting-item glass-card-sm">
+                        <label>Google Gemini API Key (Gemini 1.5 Flash):</label>
+                        <div class="input-with-button">
+                            <input type="password" id="setting-gemini-key" placeholder="Dán Gemini API Key (AIzaSy...)"/>
+                            <button id="btn-save-gemini-key" class="btn-secondary ripple">💾 Lưu</button>
+                        </div>
+                        <span id="gemini-key-status" style="font-size: 11px; margin-top: 6px; display: block; color: var(--text-muted);">Đang kiểm tra...</span>
+                    </div>
+                    <div class="setting-item glass-card-sm">
+                        <label>DeepSeek API Key (DeepSeek-V3 / Chat):</label>
+                        <div class="input-with-button">
+                            <input type="password" id="setting-deepseek-key" placeholder="Dán DeepSeek API Key (sk-...)"/>
+                            <button id="btn-save-deepseek-key" class="btn-secondary ripple">💾 Lưu</button>
+                        </div>
+                        <span id="deepseek-key-status" style="font-size: 11px; margin-top: 6px; display: block; color: var(--text-muted);">Đang kiểm tra...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="./main.js"></script>
+</body>
+</html>

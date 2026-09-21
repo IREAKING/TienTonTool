@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.pyd
+
+# CTranslate2 Models & Large Binaries (> 50MB)
+models/
+mac_tool/models/
+*.bin
+*.pt
+*.onnx
+
+# Audio Cache & Voice Samples
+mac_tool/audio_cache/
+mac_tool/voices_sample/
+*.mp3
+*.wav
+
+# Crawled & Exported Content
+mac_tool/crawled_novels/
+mac_tool/exports/
+exports/
+crawled_novels/
+
+# Logs
+*.log
+mac_tool/*.log
+
+# Windows specific artifacts
+*.exe
+*.dll
+
+# Wails build output & old aliases
+wails_dichtruyen/build/bin/
+DichTruyen.app/

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "TienTonTool",
+  "outputfilename": "TienTonTool",
+  "wailsjsdir": "./frontend",
+  "author": {
+    "name": "Tiên Tôn",
+    "email": ""
+  },
+  "info": {
+    "productName": "Tiên Tôn Tool",
+    "productVersion": "2.4.0",
+    "copyright": "Copyright 2026 Tiên Tôn Tool",
+    "comments": "Tiên Tôn Tool - Công cụ dịch và biên tập truyện tối thượng"
+  }
+}

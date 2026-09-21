@@ -1,0 +1,29 @@
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleName</key>
+        <string>Tiên Tôn Tool</string>
+        <key>CFBundleExecutable</key>
+        <string>TienTonTool</string>
+        <key>CFBundleIdentifier</key>
+        <string>com.wails.TienTonTool</string>
+        <key>CFBundleVersion</key>
+        <string>2.4.0</string>
+        <key>CFBundleGetInfoString</key>
+        <string>Tiên Tôn Tool - Công cụ dịch và biên tập truyện tối thượng</string>
+        <key>CFBundleShortVersionString</key>
+        <string>2.4.0</string>
+        <key>CFBundleIconFile</key>
+        <string>iconfile</string>
+        <key>LSMinimumSystemVersion</key>
+        <string>10.13.0</string>
+        <key>NSHighResolutionCapable</key>
+        <string>true</string>
+        <key>NSHumanReadableCopyright</key>
+        <string>Copyright 2026 Tiên Tôn Tool</string>
+        
+        
+    </dict>
+</plist>
