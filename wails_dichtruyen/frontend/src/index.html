@@ -1098,6 +1098,117 @@
                         <span id="deepseek-key-status" style="font-size: 11px; margin-top: 6px; display: block; color: var(--text-muted);">Đang kiểm tra...</span>
                     </div>
                 </div>
+
+                <!-- KHỐI QUẢN LÝ CUSTOM AI MODELS (OPENAI COMPATIBLE) -->
+                <div class="custom-models-section" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div class="header-title-group" style="margin-bottom: 16px;">
+                        <div class="title-with-badge">
+                            <h4 style="font-size: 16px; margin: 0;">⚡ Quản Lý Model AI Tùy Chỉnh (OpenAI-Compatible / DeepSeek / OpenRouter / Qwen / Local)</h4>
+                            <span class="badge-neon" style="color: var(--neon-cyan); border-color: var(--neon-cyan);">UNIVERSAL AI ENGINE</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+                            Thêm mọi model AI theo chuẩn OpenAI API: DeepSeek R1/V3, OpenAI o1/o3-mini/GPT-4o, OpenRouter, Qwen 2.5, SiliconFlow, v.v. Hỗ trợ Base URL tùy chỉnh, API Key bảo mật, điều chỉnh <b>Cấp độ suy luận (Reasoning Effort)</b> và có thể xóa, chỉnh sửa linh hoạt.
+                        </p>
+                    </div>
+
+                    <!-- Card Form Thêm / Chỉnh Sửa Model -->
+                    <div class="custom-model-form-card glass-card-sm" style="padding: 18px; border-radius: 12px; margin-bottom: 20px; background: rgba(10, 14, 26, 0.7); border: 1px solid rgba(0, 242, 254, 0.2);">
+                        <input type="hidden" id="custom-model-id" value=""/>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <span id="custom-model-form-title" style="font-weight: 700; color: var(--neon-cyan); font-size: 14px;">
+                                ➕ Thêm Model AI Mới
+                            </span>
+                            <div class="preset-buttons-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <span style="font-size: 11px; color: var(--text-muted); align-self: center; margin-right: 4px;">Điền nhanh:</span>
+                                <button type="button" class="btn-preset-chip" data-preset="deepseek-r1">DeepSeek R1</button>
+                                <button type="button" class="btn-preset-chip" data-preset="deepseek-chat">DeepSeek V3</button>
+                                <button type="button" class="btn-preset-chip" data-preset="gpt-4o">OpenAI GPT-4o</button>
+                                <button type="button" class="btn-preset-chip" data-preset="o3-mini">OpenAI o3-mini</button>
+                                <button type="button" class="btn-preset-chip" data-preset="openrouter-qwen">OpenRouter Qwen</button>
+                                <button type="button" class="btn-preset-chip" data-preset="siliconflow">SiliconFlow</button>
+                                <button type="button" class="btn-preset-chip" data-preset="ollama">Ollama Local</button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Tên hiển thị (Display Name):</label>
+                                <input type="text" id="custom-model-name" placeholder="VD: DeepSeek R1 Lý Luận Cao, GPT-4o Mini..." class="glow-input"/>
+                            </div>
+                            <div class="form-group half">
+                                <label>Tên mã Model (Model ID chuẩn API): <span style="color: var(--neon-red);">*</span></label>
+                                <input type="text" id="custom-model-code" placeholder="VD: deepseek-reasoner, gpt-4o, qwen/qwen-2.5-72b-instruct" class="glow-input"/>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Base URL (Địa chỉ API): <span style="color: var(--neon-red);">*</span></label>
+                                <input type="text" id="custom-model-url" placeholder="https://api.deepseek.com/v1" value="https://api.deepseek.com/v1" class="glow-input"/>
+                            </div>
+                            <div class="form-group half">
+                                <label>API Key:</label>
+                                <div class="input-with-button">
+                                    <input type="password" id="custom-model-key" placeholder="sk-... (để trống nếu dùng Ollama/Local)" class="glow-input"/>
+                                    <button type="button" id="btn-toggle-custom-key" class="btn-tool ripple" title="Hiện / Ẩn Key">👁️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Cấp độ suy luận (Reasoning Effort):</label>
+                                <select id="custom-model-reasoning" class="animated-select">
+                                    <option value="none" selected>Không kích hoạt (none - Dành cho Chat/V3/GPT thông thường)</option>
+                                    <option value="low">Thấp (low - Suy luận nhanh, tiết kiệm token)</option>
+                                    <option value="medium">Trung bình (medium - Cân bằng suy luận & tốc độ)</option>
+                                    <option value="high">Cao (high - Suy luận sâu, chất lượng dịch đỉnh cao nhất)</option>
+                                </select>
+                                <span class="setting-desc">Áp dụng cho DeepSeek R1, OpenAI o1/o3-mini hoặc các model suy luận reasoning tương thích. Hệ thống tự động lọc sạch thẻ &lt;think&gt;...&lt;/think&gt; để chỉ giữ lại bản dịch tiếng Việt mượt mà.</span>
+                            </div>
+                            <div class="form-group quarter">
+                                <label>Temperature (Độ sáng tạo):</label>
+                                <input type="number" id="custom-model-temp" min="0" max="1" step="0.1" value="0.3" class="glow-input"/>
+                                <span class="setting-desc">Khuyên dùng 0.2 - 0.4 cho dịch truyện.</span>
+                            </div>
+                            <div class="form-group quarter">
+                                <label>Max Tokens:</label>
+                                <input type="number" id="custom-model-tokens" min="512" max="64000" step="512" value="8192" class="glow-input"/>
+                                <span class="setting-desc">Độ dài câu trả lời tối đa.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 14px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+                            <button type="button" id="btn-reset-custom-model" class="btn-tool ripple">🔄 Làm Mới / Hủy</button>
+                            <button type="button" id="btn-test-custom-model" class="btn-secondary ripple">⚡ Thử Kết Nối (Test API)</button>
+                            <button type="button" id="btn-save-custom-model" class="btn-primary ripple glow-button" style="background: var(--primary-gradient);">
+                                <span>💾</span>
+                                <span id="btn-save-custom-text">Thêm Model Này</span>
+                            </button>
+                        </div>
+
+                        <!-- Hộp phản hồi test kết nối -->
+                        <div id="custom-model-test-box" style="display: none; margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 12px;"></div>
+                    </div>
+
+                    <!-- Danh Sách Model Đã Thêm -->
+                    <div class="saved-custom-models-container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h5 style="margin: 0; font-size: 14px; color: var(--text-primary);">
+                                Danh Sách Model AI Tùy Chỉnh Đã Lưu (<span id="custom-models-count">0</span>):
+                            </h5>
+                            <button type="button" id="btn-refresh-custom-models" class="btn-tool ripple" style="font-size: 12px;">🔄 Tải Lại Danh Sách</button>
+                        </div>
+
+                        <div id="custom-models-list" class="custom-models-grid">
+                            <!-- Render bằng Javascript -->
+                            <div class="empty-models-notice" style="padding: 24px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 8px;">
+                                Chưa có Model AI tùy chỉnh nào. Hãy thêm model đầu tiên ở trên để bắt đầu trải nghiệm!
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </main>

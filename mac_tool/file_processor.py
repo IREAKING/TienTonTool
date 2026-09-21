@@ -74,8 +74,14 @@ class BatchFileProcessor:
             return []
 
         os.makedirs(output_folder, exist_ok=True)
-        completed_files = []
-        is_llm = "gemini" in model_name.lower() or "deepseek" in model_name.lower()
+        is_custom = False
+        if self.llm_translator:
+            for cm in self.llm_translator.get_custom_models(mask_keys=False):
+                if cm.get("id") == model_name or cm.get("name") in model_name or cm.get("model") in model_name:
+                    is_custom = True
+                    break
+
+        is_llm = is_custom or "(custom ai)" in model_name.lower() or "gemini" in model_name.lower() or "deepseek" in model_name.lower()
 
         # Chuẩn bị model offline nếu không dùng LLM
         if not is_llm:

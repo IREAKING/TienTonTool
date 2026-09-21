@@ -431,6 +431,72 @@ class ServiceBridge {
         }
     }
 
+    static async getCustomModels() {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/custom-models`);
+            if (resp.ok) return await resp.json();
+        } catch (e) {
+            console.error("Lỗi getCustomModels:", e);
+        }
+        return { models: [], active_model_id: "" };
+    }
+
+    static async saveCustomModel(modelData) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/custom-models/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(modelData)
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi saveCustomModel:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
+    static async deleteCustomModel(modelId) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/custom-models/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: modelId })
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi deleteCustomModel:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
+    static async setActiveCustomModel(modelId) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/custom-models/set-active`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: modelId })
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi setActiveCustomModel:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
+    static async testCustomModel(modelData) {
+        try {
+            const resp = await fetch(`${HTTP_BRIDGE_URL}/api/custom-models/test`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(modelData)
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Lỗi testCustomModel:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
     static async getTtsVoices() {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/tts/voices`);
@@ -2739,40 +2805,499 @@ async function initSettings() {
 
     await loadApiSettings();
 
-    try {
-        const res = await ServiceBridge.getModels();
-        if (res && res.models && res.models.length > 0) {
-            quickSelect.innerHTML = "";
-            batchSelect.innerHTML = "";
-            modelContainer.innerHTML = "";
+    // ==========================================
+    // QUẢN LÝ CUSTOM AI MODELS (OPENAI COMPATIBLE)
+    // ==========================================
+    const formTitle = document.getElementById("custom-model-form-title");
+    const inputModelId = document.getElementById("custom-model-id");
+    const inputModelName = document.getElementById("custom-model-name");
+    const inputModelCode = document.getElementById("custom-model-code");
+    const inputModelUrl = document.getElementById("custom-model-url");
+    const inputModelKey = document.getElementById("custom-model-key");
+    const selectReasoning = document.getElementById("custom-model-reasoning");
+    const inputTemp = document.getElementById("custom-model-temp");
+    const inputTokens = document.getElementById("custom-model-tokens");
+    const btnToggleKey = document.getElementById("btn-toggle-custom-key");
+    const btnSaveModel = document.getElementById("btn-save-custom-model");
+    const btnSaveText = document.getElementById("btn-save-custom-text");
+    const btnTestModel = document.getElementById("btn-test-custom-model");
+    const btnResetModel = document.getElementById("btn-reset-custom-model");
+    const testBox = document.getElementById("custom-model-test-box");
+    const modelsListContainer = document.getElementById("custom-models-list");
+    const modelsCountLabel = document.getElementById("custom-models-count");
+    const btnRefreshModels = document.getElementById("btn-refresh-custom-models");
 
-            res.models.forEach(m => {
-                const opt1 = document.createElement("option");
-                opt1.value = m.name;
-                opt1.textContent = m.name;
-                quickSelect.appendChild(opt1);
-
-                const opt2 = document.createElement("option");
-                opt2.value = m.name;
-                opt2.textContent = m.name;
-                batchSelect.appendChild(opt2);
-
-                const card = document.createElement("div");
-                card.className = "model-item";
-                const isLlm = m.type === "llm";
-                const badgeText = isLlm ? "🌐 Cloud AI (Online)" : (m.downloaded ? "✓ Sẵn sàng (Offline)" : "Cần tải");
-                const badgeClass = isLlm ? "badge-neon" : "badge-success";
-                card.innerHTML = `
-                    <div class="model-title">${isLlm ? "🧠" : "📦"} ${m.name}</div>
-                    <span class="${badgeClass}">${badgeText}</span>
-                `;
-                modelContainer.appendChild(card);
-            });
-            modelsLoaded = true;
+    // Preset configurations
+    const PRESETS = {
+        "deepseek-r1": {
+            name: "DeepSeek R1 (Lý luận cao)",
+            model: "deepseek-reasoner",
+            url: "https://api.deepseek.com/v1",
+            reasoning: "high"
+        },
+        "deepseek-chat": {
+            name: "DeepSeek V3 (Chat)",
+            model: "deepseek-chat",
+            url: "https://api.deepseek.com/v1",
+            reasoning: "none"
+        },
+        "gpt-4o": {
+            name: "OpenAI GPT-4o",
+            model: "gpt-4o",
+            url: "https://api.openai.com/v1",
+            reasoning: "none"
+        },
+        "o3-mini": {
+            name: "OpenAI o3-mini (Lý luận sâu)",
+            model: "o3-mini",
+            url: "https://api.openai.com/v1",
+            reasoning: "high"
+        },
+        "openrouter-qwen": {
+            name: "Qwen 2.5 72B (OpenRouter)",
+            model: "qwen/qwen-2.5-72b-instruct",
+            url: "https://openrouter.ai/api/v1",
+            reasoning: "none"
+        },
+        "siliconflow": {
+            name: "DeepSeek R1 (SiliconFlow)",
+            model: "deepseek-ai/DeepSeek-R1",
+            url: "https://api.siliconflow.cn/v1",
+            reasoning: "high"
+        },
+        "ollama": {
+            name: "Ollama Llama 3.3 (Local)",
+            model: "llama3.3:latest",
+            url: "http://localhost:11434/v1",
+            reasoning: "none"
         }
-    } catch (e) {
-        console.error("Lỗi lấy models:", e);
+    };
+
+    // Điền nhanh Preset
+    document.querySelectorAll(".btn-preset-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+            const key = chip.getAttribute("data-preset");
+            const p = PRESETS[key];
+            if (p) {
+                if (inputModelName) inputModelName.value = p.name;
+                if (inputModelCode) inputModelCode.value = p.model;
+                if (inputModelUrl) inputModelUrl.value = p.url;
+                if (selectReasoning) selectReasoning.value = p.reasoning;
+                showToast(`Đã nạp mẫu: ${p.name}`, "info", 1800);
+            }
+        });
+    });
+
+    // Hiện / Ẩn Key
+    if (btnToggleKey && inputModelKey) {
+        btnToggleKey.addEventListener("click", () => {
+            if (inputModelKey.type === "password") {
+                inputModelKey.type = "text";
+                btnToggleKey.textContent = "🙈";
+            } else {
+                inputModelKey.type = "password";
+                btnToggleKey.textContent = "👁️";
+            }
+        });
     }
+
+    // Làm mới / Hủy sửa
+    function resetCustomModelForm() {
+        if (inputModelId) inputModelId.value = "";
+        if (inputModelName) inputModelName.value = "";
+        if (inputModelCode) inputModelCode.value = "";
+        if (inputModelUrl) inputModelUrl.value = "https://api.deepseek.com/v1";
+        if (inputModelKey) inputModelKey.value = "";
+        if (selectReasoning) selectReasoning.value = "none";
+        if (inputTemp) inputTemp.value = "0.3";
+        if (inputTokens) inputTokens.value = "8192";
+        if (formTitle) formTitle.textContent = "➕ Thêm Model AI Mới";
+        if (btnSaveText) btnSaveText.textContent = "Thêm Model Này";
+        if (testBox) {
+            testBox.style.display = "none";
+            testBox.innerHTML = "";
+        }
+    }
+
+    if (btnResetModel) {
+        btnResetModel.addEventListener("click", resetCustomModelForm);
+    }
+
+    // Nạp dữ liệu lên form để sửa
+    window.editCustomModel = function(modelObj) {
+        if (!modelObj) return;
+        if (inputModelId) inputModelId.value = modelObj.id || "";
+        if (inputModelName) inputModelName.value = modelObj.name || "";
+        if (inputModelCode) inputModelCode.value = modelObj.model || "";
+        if (inputModelUrl) inputModelUrl.value = modelObj.base_url || "https://api.deepseek.com/v1";
+        if (inputModelKey) inputModelKey.value = modelObj.api_key || "";
+        if (selectReasoning) selectReasoning.value = modelObj.reasoning_effort || "none";
+        if (inputTemp) inputTemp.value = modelObj.temperature !== undefined ? modelObj.temperature : "0.3";
+        if (inputTokens) inputTokens.value = modelObj.max_tokens !== undefined ? modelObj.max_tokens : "8192";
+        if (formTitle) formTitle.textContent = `✏️ Chỉnh Sửa Model: ${modelObj.name || modelObj.model}`;
+        if (btnSaveText) btnSaveText.textContent = "Cập Nhật Model Này";
+
+        // Cuộn mượt tới form
+        const formCard = document.querySelector(".custom-model-form-card");
+        if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    // Test thử kết nối
+    if (btnTestModel) {
+        btnTestModel.addEventListener("click", async () => {
+            const modelCode = inputModelCode ? inputModelCode.value.trim() : "";
+            const baseUrl = inputModelUrl ? inputModelUrl.value.trim() : "";
+            const apiKey = inputModelKey ? inputModelKey.value.trim() : "";
+            const reasoning = selectReasoning ? selectReasoning.value : "none";
+
+            if (!baseUrl) {
+                showToast("Vui lòng nhập Base URL!", "warning");
+                return;
+            }
+            if (!modelCode) {
+                showToast("Vui lòng nhập Tên mã Model!", "warning");
+                return;
+            }
+
+            btnTestModel.disabled = true;
+            btnTestModel.textContent = "⏳ Đang kết nối...";
+            testBox.style.display = "block";
+            testBox.style.background = "rgba(0, 242, 254, 0.1)";
+            testBox.style.border = "1px solid rgba(0, 242, 254, 0.3)";
+            testBox.style.color = "var(--neon-cyan)";
+            testBox.innerHTML = "⏳ Đang gửi yêu cầu kiểm tra (ping) tới API endpoint...";
+
+            try {
+                const res = await ServiceBridge.testCustomModel({
+                    model: modelCode,
+                    base_url: baseUrl,
+                    api_key: apiKey,
+                    reasoning_effort: reasoning
+                });
+
+                if (res && res.success) {
+                    testBox.style.background = "rgba(16, 185, 129, 0.15)";
+                    testBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+                    testBox.style.color = "var(--neon-green)";
+                    testBox.innerHTML = `
+                        <strong>✅ KẾT NỐI THÀNH CÔNG!</strong> (Độ trễ: ${res.latency}s)<br/>
+                        <span style="font-size: 11px; color: var(--text-secondary);">Phản hồi mẫu:</span>
+                        <em>"${escapeHtml(res.result || 'OK')}"</em>
+                    `;
+                    showToast(`Kết nối thành công (${res.latency}s)!`, "success");
+                } else {
+                    testBox.style.background = "rgba(239, 68, 68, 0.15)";
+                    testBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                    testBox.style.color = "var(--neon-red)";
+                    testBox.innerHTML = `<strong>❌ KẾT NỐI THẤT BẠI:</strong> ${escapeHtml(res.error || 'Lỗi không xác định')}`;
+                    showToast("Kết nối thất bại. Kiểm tra lại Key hoặc Base URL!", "error");
+                }
+            } catch (err) {
+                testBox.style.background = "rgba(239, 68, 68, 0.15)";
+                testBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                testBox.style.color = "var(--neon-red)";
+                testBox.innerHTML = `<strong>❌ LỖI GỌI API:</strong> ${escapeHtml(String(err))}`;
+                showToast("Lỗi kết nối: " + err, "error");
+            } finally {
+                btnTestModel.disabled = false;
+                btnTestModel.textContent = "⚡ Thử Kết Nối (Test API)";
+            }
+        });
+    }
+
+    // Lưu hoặc Cập nhật Model
+    if (btnSaveModel) {
+        btnSaveModel.addEventListener("click", async () => {
+            const mId = inputModelId ? inputModelId.value.trim() : "";
+            const mName = inputModelName ? inputModelName.value.trim() : "";
+            const mCode = inputModelCode ? inputModelCode.value.trim() : "";
+            const mUrl = inputModelUrl ? inputModelUrl.value.trim() : "";
+            const mKey = inputModelKey ? inputModelKey.value.trim() : "";
+            const mReasoning = selectReasoning ? selectReasoning.value : "none";
+            const mTemp = inputTemp ? parseFloat(inputTemp.value) : 0.3;
+            const mTokens = inputTokens ? parseInt(inputTokens.value) : 8192;
+
+            if (!mCode) {
+                showToast("Vui lòng nhập Tên mã Model!", "warning");
+                if (inputModelCode) inputModelCode.focus();
+                return;
+            }
+            if (!mUrl) {
+                showToast("Vui lòng nhập Base URL!", "warning");
+                if (inputModelUrl) inputModelUrl.focus();
+                return;
+            }
+
+            btnSaveModel.disabled = true;
+            try {
+                const res = await ServiceBridge.saveCustomModel({
+                    id: mId,
+                    name: mName || mCode,
+                    model: mCode,
+                    base_url: mUrl,
+                    api_key: mKey,
+                    reasoning_effort: mReasoning,
+                    temperature: mTemp,
+                    max_tokens: mTokens
+                });
+
+                if (res && res.success) {
+                    showToast(`Đã lưu Model AI: ${mName || mCode}!`, "success", 2500);
+                    resetCustomModelForm();
+                    await loadCustomModels();
+                    await refreshAllModelSelects();
+                } else {
+                    showToast("Lỗi khi lưu model: " + (res.error || ""), "error");
+                }
+            } catch (e) {
+                showToast("Lỗi lưu model: " + e, "error");
+            } finally {
+                btnSaveModel.disabled = false;
+            }
+        });
+    }
+
+    // Tải và hiển thị danh sách Custom Models
+    async function loadCustomModels() {
+        try {
+            const data = await ServiceBridge.getCustomModels();
+            const list = data.models || [];
+            const activeId = data.active_model_id || "";
+
+            if (modelsCountLabel) modelsCountLabel.textContent = list.length;
+
+            if (!modelsListContainer) return;
+            modelsListContainer.innerHTML = "";
+
+            if (list.length === 0) {
+                modelsListContainer.innerHTML = `
+                    <div class="empty-models-notice" style="padding: 24px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 8px;">
+                        Chưa có Model AI tùy chỉnh nào. Hãy thêm model đầu tiên ở trên để bắt đầu trải nghiệm!
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach(item => {
+                const isActive = (item.id === activeId);
+                const card = document.createElement("div");
+                card.className = `custom-model-card ${isActive ? "is-active" : ""}`;
+
+                let reasoningLabel = "Tắt";
+                let rClass = "none";
+                if (item.reasoning_effort === "low") { reasoningLabel = "Thấp (low)"; rClass = "low"; }
+                else if (item.reasoning_effort === "medium") { reasoningLabel = "Vừa (medium)"; rClass = "medium"; }
+                else if (item.reasoning_effort === "high") { reasoningLabel = "Cao (high 🔥)"; rClass = "high"; }
+
+                const keyDisplay = item.api_key ? item.api_key : `<span style="color: var(--text-muted);">(Trống / Local)</span>`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="custom-model-card-header">
+                            <div class="custom-model-title-group">
+                                <span class="custom-model-name">
+                                    🤖 ${escapeHtml(item.name || item.model)}
+                                </span>
+                                <span class="custom-model-id-badge">${escapeHtml(item.model)}</span>
+                            </div>
+                            <div>
+                                ${isActive ? '<span class="active-pill">⭐ Đang Dùng</span>' : ''}
+                            </div>
+                        </div>
+
+                        <div class="custom-model-card-body">
+                            <div class="custom-model-info-row">
+                                <span class="custom-model-info-label">Base URL:</span>
+                                <span class="custom-model-info-val" title="${escapeHtml(item.base_url)}">${escapeHtml(item.base_url)}</span>
+                            </div>
+                            <div class="custom-model-info-row">
+                                <span class="custom-model-info-label">API Key:</span>
+                                <span class="custom-model-info-val">${keyDisplay}</span>
+                            </div>
+                            <div class="custom-model-info-row">
+                                <span class="custom-model-info-label">Cấp độ suy luận:</span>
+                                <span class="reasoning-badge ${rClass}">💡 ${reasoningLabel}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="custom-model-actions">
+                        <button type="button" class="btn-tool ripple btn-model-test" title="Kiểm tra kết nối">⚡ Thử</button>
+                        ${!isActive ? '<button type="button" class="btn-tool ripple btn-model-set-active" style="color: var(--neon-cyan);" title="Đặt làm model mặc định">⭐ Dùng</button>' : ''}
+                        <button type="button" class="btn-tool ripple btn-model-edit" title="Chỉnh sửa thông tin">✏️ Sửa</button>
+                        <button type="button" class="btn-tool ripple btn-model-delete" style="color: var(--neon-red);" title="Xóa model này">🗑️ Xóa</button>
+                    </div>
+                `;
+
+                // Event Thử kết nối
+                const btnTest = card.querySelector(".btn-model-test");
+                btnTest.addEventListener("click", async () => {
+                    btnTest.disabled = true;
+                    btnTest.textContent = "⏳...";
+                    try {
+                        const res = await ServiceBridge.testCustomModel(item);
+                        if (res && res.success) {
+                            showToast(`Model "${item.name}" hoạt động tốt (${res.latency}s)!`, "success");
+                        } else {
+                            showToast(`Lỗi "${item.name}": ${res.error || 'Thất bại'}`, "error");
+                        }
+                    } catch (err) {
+                        showToast(`Lỗi: ${err}`, "error");
+                    } finally {
+                        btnTest.disabled = false;
+                        btnTest.textContent = "⚡ Thử";
+                    }
+                });
+
+                // Event Đặt Active
+                const btnActive = card.querySelector(".btn-model-set-active");
+                if (btnActive) {
+                    btnActive.addEventListener("click", async () => {
+                        try {
+                            const res = await ServiceBridge.setActiveCustomModel(item.id);
+                            if (res && res.success) {
+                                showToast(`Đã chọn "${item.name}" làm Model chính!`, "success");
+                                await loadCustomModels();
+                                await refreshAllModelSelects(item.id);
+                            } else {
+                                showToast("Lỗi khi kích hoạt model!", "error");
+                            }
+                        } catch (err) {
+                            showToast("Lỗi: " + err, "error");
+                        }
+                    });
+                }
+
+                // Event Sửa
+                const btnEdit = card.querySelector(".btn-model-edit");
+                btnEdit.addEventListener("click", () => {
+                    window.editCustomModel(item);
+                });
+
+                // Event Xóa
+                const btnDel = card.querySelector(".btn-model-delete");
+                btnDel.addEventListener("click", async () => {
+                    const confirmDel = confirm(`Bạn có chắc chắn muốn xóa model "${item.name}" (${item.model}) không?`);
+                    if (!confirmDel) return;
+
+                    try {
+                        const res = await ServiceBridge.deleteCustomModel(item.id);
+                        if (res && res.success) {
+                            showToast(`Đã xóa model "${item.name}"!`, "info");
+                            await loadCustomModels();
+                            await refreshAllModelSelects();
+                        } else {
+                            showToast("Lỗi khi xóa model", "error");
+                        }
+                    } catch (err) {
+                        showToast("Lỗi xóa: " + err, "error");
+                    }
+                });
+
+                modelsListContainer.appendChild(card);
+            });
+        } catch (e) {
+            console.error("Lỗi loadCustomModels:", e);
+        }
+    }
+
+    if (btnRefreshModels) {
+        btnRefreshModels.addEventListener("click", async () => {
+            await loadCustomModels();
+            showToast("Đã làm mới danh sách Model!", "info", 1500);
+        });
+    }
+
+    await loadCustomModels();
+
+    // Nạp danh sách models vào dropdown Tab 1 & Tab 2
+    async function refreshAllModelSelects(selectedModelId = null) {
+        try {
+            const res = await ServiceBridge.getModels();
+            if (res && res.models && res.models.length > 0) {
+                quickSelect.innerHTML = "";
+                batchSelect.innerHTML = "";
+                modelContainer.innerHTML = "";
+
+                // Nhóm models theo loại
+                const offlineModels = res.models.filter(m => m.type === "offline");
+                const cloudModels = res.models.filter(m => m.type === "llm");
+                const customModels = res.models.filter(m => m.type === "custom_llm");
+
+                function populateSelect(selectEl) {
+                    if (offlineModels.length > 0) {
+                        const grpOff = document.createElement("optgroup");
+                        grpOff.label = "📦 MÔ HÌNH OFFLINE (CTRANSLATE2)";
+                        offlineModels.forEach(m => {
+                            const opt = document.createElement("option");
+                            opt.value = m.name;
+                            opt.textContent = m.name;
+                            grpOff.appendChild(opt);
+                        });
+                        selectEl.appendChild(grpOff);
+                    }
+
+                    if (cloudModels.length > 0) {
+                        const grpCloud = document.createElement("optgroup");
+                        grpCloud.label = "🌐 CLOUD AI CHUẨN (GEMINI / DEEPSEEK)";
+                        cloudModels.forEach(m => {
+                            const opt = document.createElement("option");
+                            opt.value = m.name;
+                            opt.textContent = m.name;
+                            grpCloud.appendChild(opt);
+                        });
+                        selectEl.appendChild(grpCloud);
+                    }
+
+                    if (customModels.length > 0) {
+                        const grpCust = document.createElement("optgroup");
+                        grpCust.label = "🤖 CUSTOM AI MODELS (BẠN ĐÃ THÊM)";
+                        customModels.forEach(m => {
+                            const opt = document.createElement("option");
+                            opt.value = m.name;
+                            opt.textContent = m.name;
+                            if (selectedModelId && m.model_id === selectedModelId) {
+                                opt.selected = true;
+                            } else if (m.active) {
+                                opt.selected = true;
+                            }
+                            grpCust.appendChild(opt);
+                        });
+                        selectEl.appendChild(grpCust);
+                    }
+                }
+
+                populateSelect(quickSelect);
+                populateSelect(batchSelect);
+
+                // Render card offline
+                res.models.forEach(m => {
+                    const card = document.createElement("div");
+                    card.className = "model-item";
+                    const isLlm = m.type === "llm" || m.type === "custom_llm";
+                    let badgeText = m.downloaded ? "✓ Sẵn sàng (Offline)" : "Cần tải";
+                    let badgeClass = "badge-success";
+                    if (m.type === "custom_llm") {
+                        badgeText = "⚡ Custom AI";
+                        badgeClass = "badge-neon";
+                    } else if (m.type === "llm") {
+                        badgeText = "🌐 Cloud AI";
+                        badgeClass = "badge-neon";
+                    }
+                    card.innerHTML = `
+                        <div class="model-title">${isLlm ? "🧠" : "📦"} ${m.name}</div>
+                        <span class="${badgeClass}">${badgeText}</span>
+                    `;
+                    modelContainer.appendChild(card);
+                });
+                modelsLoaded = true;
+            }
+        } catch (e) {
+            console.error("Lỗi refreshAllModelSelects:", e);
+        }
+    }
+
+    await refreshAllModelSelects();
 }
 
 // ==========================================

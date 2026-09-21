@@ -202,7 +202,29 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 "downloaded": True,
                 "active": False
             })
+            # 3. Thêm các mô hình Custom AI LLM do người dùng cấu hình
+            custom_list = llm_trans.get_custom_models(mask_keys=False)
+            active_cid = llm_trans.config.get("active_model_id", "")
+            for cm in custom_list:
+                c_id = cm.get("id", "")
+                c_name = cm.get("name", "") or cm.get("model", "")
+                reasoning = cm.get("reasoning_effort", "none")
+                r_badge = f" [Suy luận: {reasoning}]" if reasoning and reasoning != "none" else ""
+                display_label = f"🤖 {c_name}{r_badge} (Custom AI)"
+                models_data.append({
+                    "name": display_label,
+                    "model_id": c_id,
+                    "raw_model": cm.get("model", ""),
+                    "type": "custom_llm",
+                    "downloaded": True,
+                    "active": (c_id == active_cid)
+                })
             self._send_json({"models": models_data})
+        elif path == "/api/custom-models":
+            self._send_json({
+                "models": llm_trans.get_custom_models(mask_keys=True),
+                "active_model_id": llm_trans.config.get("active_model_id", "")
+            })
         elif path == "/settings":
             cfg = llm_trans.load_config()
             gemini_k = cfg.get("gemini_api_key", "")
@@ -280,6 +302,33 @@ class BridgeHandler(BaseHTTPRequestHandler):
             success = llm_trans.save_config(new_cfg)
             self._send_json({"success": success})
 
+        elif path == "/api/custom-models/save":
+            try:
+                saved = llm_trans.save_custom_model(req)
+                self._send_json({"success": True, "model": saved})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, 500)
+
+        elif path == "/api/custom-models/delete":
+            m_id = req.get("id", "")
+            if not m_id:
+                self._send_json({"success": False, "error": "Thiếu ID model"}, 400)
+            else:
+                ok = llm_trans.delete_custom_model(m_id)
+                self._send_json({"success": ok})
+
+        elif path == "/api/custom-models/set-active":
+            m_id = req.get("id", "")
+            ok = llm_trans.set_active_model(m_id)
+            self._send_json({"success": ok})
+
+        elif path == "/api/custom-models/test":
+            try:
+                test_res = llm_trans.test_custom_model(req)
+                self._send_json(test_res)
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, 500)
+
         elif path == "/translate":
             text = req.get("text", "")
             model_name = req.get("model") or list(AVAILABLE_MODELS.keys())[0]
@@ -293,8 +342,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
             start_t = time.time()
             try:
-                # Xử lý nếu chọn dịch bằng LLM
-                if "gemini" in model_name.lower() or "deepseek" in model_name.lower():
+                # Kiểm tra nếu là custom model (theo id, name, model hoặc nhãn chứa Custom AI)
+                is_custom = False
+                for cm in llm_trans.get_custom_models(mask_keys=False):
+                    if cm.get("id") == model_name or cm.get("name") in model_name or cm.get("model") in model_name:
+                        is_custom = True
+                        break
+
+                # Xử lý nếu chọn dịch bằng LLM hoặc Custom Model
+                if is_custom or "(custom ai)" in model_name.lower() or "gemini" in model_name.lower() or "deepseek" in model_name.lower():
                     result = llm_trans.translate(
                         text,
                         engine=model_name,
@@ -319,7 +375,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     self._send_json({"status": "loaded", "model": model_name})
                 except Exception as e:
                     self._send_json({"error": str(e)}, 500)
-            elif "gemini" in model_name.lower() or "deepseek" in model_name.lower():
+            elif "gemini" in model_name.lower() or "deepseek" in model_name.lower() or "(custom ai)" in model_name.lower() or any(m.get("id") == model_name for m in llm_trans.get_custom_models(mask_keys=False)):
                 self._send_json({"status": "loaded", "model": model_name})
             else:
                 self._send_json({"error": "Model không hợp lệ"}, 400)

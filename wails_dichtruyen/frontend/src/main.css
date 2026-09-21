@@ -1461,3 +1461,195 @@ body {
     outline: none;
 }
 
+/* ==========================================
+   CUSTOM AI MODELS MANAGEMENT STYLING
+   ========================================== */
+.btn-preset-chip {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-preset-chip:hover {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    transform: translateY(-1px);
+}
+
+.custom-models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.custom-model-card {
+    background: rgba(15, 20, 35, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-model-card:hover {
+    border-color: rgba(0, 242, 254, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 242, 254, 0.15);
+    transform: translateY(-2px);
+}
+
+.custom-model-card.is-active {
+    border-color: var(--neon-cyan);
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(15, 20, 35, 0.85) 100%);
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.25), inset 0 0 15px rgba(0, 242, 254, 0.05);
+}
+
+.custom-model-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    gap: 8px;
+}
+
+.custom-model-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.custom-model-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.custom-model-id-badge {
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--neon-cyan);
+    background: rgba(0, 242, 254, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    display: inline-block;
+    max-width: fit-content;
+}
+
+.custom-model-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.custom-model-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-model-info-label {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.custom-model-info-val {
+    font-family: ui-monospace, monospace;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+.reasoning-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.reasoning-badge.none {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reasoning-badge.low {
+    background: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.reasoning-badge.medium {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.reasoning-badge.high {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: pulseReasoning 2s infinite ease-in-out;
+}
+
+@keyframes pulseReasoning {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.2); }
+}
+
+.custom-model-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+}
+
+.custom-model-actions button {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.active-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0, 242, 254, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid var(--neon-cyan);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
