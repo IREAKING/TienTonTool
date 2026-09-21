@@ -1128,7 +1128,20 @@ function initConvert() {
     const btnToTts = document.getElementById("btn-convert-to-tts");
 
     const modeSelect = document.getElementById("convert-mode-select");
+    const modelWrapper = document.getElementById("convert-model-option-wrapper");
+    const modelSelect = document.getElementById("convert-model-select");
     const genreSelect = document.getElementById("convert-genre-select");
+
+    function updateConvertModeVisibility() {
+        if (!modeSelect || !modelWrapper) return;
+        const val = modeSelect.value;
+        const needsAi = (val === "hybrid" || val === "ai");
+        modelWrapper.style.display = needsAi ? "" : "none";
+    }
+    if (modeSelect) {
+        modeSelect.addEventListener("change", updateConvertModeVisibility);
+        updateConvertModeVisibility();
+    }
 
     // Đếm ký tự và từ
     function updateCounters() {
@@ -1225,21 +1238,12 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
                 return;
             }
 
-            const rawMode = modeSelect.value;
-            let mode = "rules";
+            const mode = modeSelect ? modeSelect.value : "rules";
             let engine = "deepseek";
-
-            if (rawMode === "hybrid") {
-                mode = "hybrid";
-                engine = "deepseek";
-            } else if (rawMode === "ai-deepseek") {
-                mode = "ai";
-                engine = "deepseek";
-            } else if (rawMode === "ai-gemini") {
-                mode = "ai";
-                engine = "gemini";
-            } else {
-                mode = "rules";
+            if (mode === "hybrid" || mode === "ai") {
+                if (modelSelect && modelSelect.value) {
+                    engine = modelSelect.value;
+                }
             }
 
             const genre = genreSelect.value || "xianxia";
@@ -1315,10 +1319,23 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
     const btnSelectInput = document.getElementById("btn-select-convert-input-folder");
     const btnSelectOutput = document.getElementById("btn-select-convert-output-folder");
     const batchModeSelect = document.getElementById("convert-batch-mode-select");
+    const batchModelWrapper = document.getElementById("convert-batch-model-option-wrapper");
+    const batchModelSelect = document.getElementById("convert-batch-model-select");
     const batchGenreSelect = document.getElementById("convert-batch-genre-select");
     const suffixInput = document.getElementById("convert-batch-suffix");
     const btnBatchStart = document.getElementById("btn-convert-batch-start");
     const btnBatchStop = document.getElementById("btn-convert-batch-stop");
+
+    function updateBatchConvertModeVisibility() {
+        if (!batchModeSelect || !batchModelWrapper) return;
+        const val = batchModeSelect.value;
+        const needsAi = (val === "hybrid" || val === "ai");
+        batchModelWrapper.style.display = needsAi ? "" : "none";
+    }
+    if (batchModeSelect) {
+        batchModeSelect.addEventListener("change", updateBatchConvertModeVisibility);
+        updateBatchConvertModeVisibility();
+    }
 
     if (btnSelectInput) {
         btnSelectInput.addEventListener("click", async () => {
@@ -1349,21 +1366,12 @@ Bị người ngăn cản phía trước, trong mắt hắn lóe lên một tia 
             }
 
             const outF = outputFolder.value.trim();
-            const rawMode = batchModeSelect.value;
-            let mode = "rules";
+            const mode = batchModeSelect ? batchModeSelect.value : "rules";
             let engine = "deepseek";
-
-            if (rawMode === "hybrid") {
-                mode = "hybrid";
-                engine = "deepseek";
-            } else if (rawMode === "ai-deepseek") {
-                mode = "ai";
-                engine = "deepseek";
-            } else if (rawMode === "ai-gemini") {
-                mode = "ai";
-                engine = "gemini";
-            } else {
-                mode = "rules";
+            if (mode === "hybrid" || mode === "ai") {
+                if (batchModelSelect && batchModelSelect.value) {
+                    engine = batchModelSelect.value;
+                }
             }
 
             const genre = batchGenreSelect.value || "xianxia";
@@ -3360,6 +3368,53 @@ YÊU CẦU BẮT BUỘC:
 
                 populateSelect(quickSelect);
                 populateSelect(batchSelect);
+
+                // Nạp models vào dropdown Tab Chuyển Convert (Cả đơn lẻ & Hàng loạt)
+                const convertModelSelect = document.getElementById("convert-model-select");
+                const convertBatchModelSelect = document.getElementById("convert-batch-model-select");
+
+                function populateConvertSelect(selectEl) {
+                    if (!selectEl) return;
+                    const prevVal = selectEl.value;
+                    selectEl.innerHTML = "";
+
+                    if (customModels.length > 0) {
+                        const grpCust = document.createElement("optgroup");
+                        grpCust.label = "🤖 CUSTOM AI MODELS (BẠN ĐÃ THÊM)";
+                        customModels.forEach(m => {
+                            const opt = document.createElement("option");
+                            opt.value = m.name;
+                            opt.textContent = m.name;
+                            if (selectedModelId && (m.model_id === selectedModelId || m.id === selectedModelId)) {
+                                opt.selected = true;
+                            } else if (m.active) {
+                                opt.selected = true;
+                            }
+                            grpCust.appendChild(opt);
+                        });
+                        selectEl.appendChild(grpCust);
+                    }
+
+                    if (cloudModels.length > 0) {
+                        const grpCloud = document.createElement("optgroup");
+                        grpCloud.label = "🌐 CLOUD AI CHUẨN (GEMINI / DEEPSEEK)";
+                        cloudModels.forEach(m => {
+                            const opt = document.createElement("option");
+                            opt.value = m.name;
+                            opt.textContent = m.name;
+                            grpCloud.appendChild(opt);
+                        });
+                        selectEl.appendChild(grpCloud);
+                    }
+
+                    if (!selectedModelId && prevVal) {
+                        const hasVal = Array.from(selectEl.options).some(o => o.value === prevVal);
+                        if (hasVal) selectEl.value = prevVal;
+                    }
+                }
+
+                populateConvertSelect(convertModelSelect);
+                populateConvertSelect(convertBatchModelSelect);
 
                 // Render card offline
                 res.models.forEach(m => {

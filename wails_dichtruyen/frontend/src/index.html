@@ -411,9 +411,14 @@
                         <label>Động cơ gọt giũa (Engine):</label>
                         <select id="convert-mode-select" class="animated-select">
                             <option value="rules" selected>⚡ Quy tắc Siêu Tốc (Offline 100% - Tức thì - Miễn phí)</option>
-                            <option value="hybrid">🌟 Hybrid (Lọc Quy Tắc + AI Trau Chuốt)</option>
-                            <option value="ai-deepseek">🧠 AI Văn Học: DeepSeek-V3 (Chuẩn xác cao)</option>
-                            <option value="ai-gemini">🤖 AI Văn Học: Gemini 1.5 Flash (Nhanh & Mượt)</option>
+                            <option value="hybrid">🌟 Hybrid (Lọc Quy Tắc + Dùng Model AI trau chuốt)</option>
+                            <option value="ai">🧠 AI Văn Học (Dùng Model AI viết lại hoàn toàn)</option>
+                        </select>
+                    </div>
+                    <div class="option-item" id="convert-model-option-wrapper" style="display: none;">
+                        <label>Mô hình AI áp dụng:</label>
+                        <select id="convert-model-select" class="animated-select" style="min-width: 220px;">
+                            <!-- Nạp tự động từ danh sách Model đã thiết lập (Muse, DeepSeek, Gemini...) -->
                         </select>
                     </div>
                     <div class="option-item">
@@ -463,16 +468,21 @@
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group third">
+                    <div class="form-group quarter">
                         <label>Động cơ xử lý hàng loạt:</label>
                         <select id="convert-batch-mode-select" class="animated-select">
                             <option value="rules" selected>⚡ Quy tắc Siêu Tốc (Khuyên dùng - Cực nhanh)</option>
                             <option value="hybrid">🌟 Hybrid (Quy Tắc + AI)</option>
-                            <option value="ai-deepseek">🧠 AI DeepSeek-V3 (Cần API Key)</option>
-                            <option value="ai-gemini">🤖 AI Gemini 1.5 Flash (Cần API Key)</option>
+                            <option value="ai">🧠 AI Văn Học (Dùng Model AI viết lại)</option>
                         </select>
                     </div>
-                    <div class="form-group third">
+                    <div class="form-group quarter" id="convert-batch-model-option-wrapper" style="display: none;">
+                        <label>Mô hình AI áp dụng:</label>
+                        <select id="convert-batch-model-select" class="animated-select">
+                            <!-- Nạp tự động từ danh sách Model đã thiết lập (Muse, DeepSeek, Gemini...) -->
+                        </select>
+                    </div>
+                    <div class="form-group quarter">
                         <label>Giọng văn / Thể loại:</label>
                         <select id="convert-batch-genre-select" class="animated-select">
                             <option value="xianxia" selected>⚔️ Tiên Hiệp / Kiếm Hiệp</option>
@@ -481,7 +491,7 @@
                             <option value="romance">🌸 Ngôn Tình / Nữ Tần</option>
                         </select>
                     </div>
-                    <div class="form-group third">
+                    <div class="form-group quarter">
                         <label>Hậu tố tên file xuất:</label>
                         <input type="text" id="convert-batch-suffix" value="_dich" placeholder="_dich"/>
                     </div>

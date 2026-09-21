@@ -735,10 +735,40 @@ class ConvertPolisher:
 
         full_prompt = f"{system_prompt}\n{dict_hint}\nĐoạn văn bản Convert cần chuyển sang truyện dịch:\n\n{text}"
 
+        # 1. Kiểm tra xem engine có khớp với Custom AI Model nào không (Muse Spark, DeepSeek R1, GPT-4o, v.v.)
+        custom_cfg = None
+        custom_list = self.llm.get_custom_models(mask_keys=False)
+        for cm in custom_list:
+            if cm.get("id") == engine or cm.get("name") == engine or cm.get("model") == engine or cm.get("name") in engine or cm.get("model") in engine:
+                custom_cfg = cm
+                break
+
+        # Nếu chọn "active" hoặc chưa chọn model cụ thể, thử lấy active model ID
+        if not custom_cfg and (engine in ("active", "custom", "custom_ai", "") or "(custom ai)" in engine.lower()):
+            active_id = self.llm.config.get("active_model_id")
+            for cm in custom_list:
+                if cm.get("id") == active_id:
+                    custom_cfg = cm
+                    break
+
+        if custom_cfg:
+            # Chạy qua Universal OpenAI-compatible client của LLMTranslator
+            model_copy = dict(custom_cfg)
+            if api_key:
+                model_copy["api_key"] = api_key
+            # Sử dụng Prompt chuyên cho Convert, nếu model có prompt riêng thì kết hợp
+            conv_prompt = model_copy.get("system_prompt", "").strip() or system_prompt
+            model_copy["system_prompt"] = conv_prompt
+            return self.llm.translate_openai_compatible(
+                model_cfg=model_copy,
+                text=f"Chuyển đoạn văn bản convert sau thành truyện dịch văn học hoàn chỉnh:\n\n{text}",
+                dict_entries=dict_entries
+            )
+
         if "gemini" in engine.lower():
             key = api_key or os.environ.get("GEMINI_API_KEY", "").strip() or self.llm.config.get("gemini_api_key", "").strip()
             if not key:
-                raise ValueError("Chưa thiết lập Gemini API Key. Vui lòng cấu hình trong mac_tool/config.json hoặc truyền biến môi trường GEMINI_API_KEY.")
+                raise ValueError("Chưa thiết lập Gemini API Key. Vui lòng cấu hình trong Cài Đặt.")
             import requests
             model = "gemini-2.0-flash" if "2.0" in engine else "gemini-1.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
@@ -760,7 +790,7 @@ class ConvertPolisher:
         elif "deepseek" in engine.lower():
             key = api_key or os.environ.get("DEEPSEEK_API_KEY", "").strip() or self.llm.config.get("deepseek_api_key", "").strip()
             if not key:
-                raise ValueError("Chưa thiết lập DeepSeek API Key. Vui lòng cấu hình trong mac_tool/config.json hoặc truyền biến môi trường DEEPSEEK_API_KEY.")
+                raise ValueError("Chưa thiết lập DeepSeek API Key. Vui lòng cấu hình trong Cài Đặt.")
             import requests
             url = "https://api.deepseek.com/chat/completions"
             headers = {
@@ -783,7 +813,7 @@ class ConvertPolisher:
             return data["choices"][0]["message"]["content"].strip()
 
         else:
-            raise ValueError(f"Không hỗ trợ AI Engine '{engine}'")
+            raise ValueError(f"Không hỗ trợ AI Engine '{engine}'. Vui lòng cấu hình model trong Cài Đặt.")
 
     def polish_hybrid(
         self,
