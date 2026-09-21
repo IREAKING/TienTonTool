@@ -899,6 +899,7 @@ class ConvertPolisher:
         genre: str = "xianxia",
         suffix: str = "_dich",
         custom_prompt: Optional[str] = None,
+        resume: bool = True,
         status_callback: Optional[Callable[[str, float, str, int, int], None]] = None
     ):
         self._is_stopped = False
@@ -927,6 +928,16 @@ class ConvertPolisher:
 
             fname = os.path.basename(fpath)
             pct = round(((i - 1) / total) * 100, 1)
+
+            base, ext = os.path.splitext(fname)
+            out_path = os.path.join(output_folder, f"{base}{suffix}{ext}")
+
+            # Smart Resume: Nếu file đích đã tồn tại và có dung lượng > 10 bytes, bỏ qua và chuyển tiếp chương tiếp theo
+            if resume and os.path.exists(out_path) and os.path.getsize(out_path) > 10:
+                if status_callback:
+                    status_callback(f"⏩ Đã có bản dịch, bỏ qua: {fname}", round((i / total) * 100, 1), fname, i, total)
+                continue
+
             if status_callback:
                 status_callback(f"[{i}/{total}] Đang xử lý: {fname}...", pct, fname, i, total)
 

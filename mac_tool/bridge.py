@@ -428,6 +428,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             opencc_enabled = bool(req.get("opencc", True))
             concurrency = int(req.get("concurrency", 3))
             auto_clean = bool(req.get("auto_clean", True))
+            resume = bool(req.get("resume", True))
 
             if not os.path.isdir(input_folder):
                 self._send_json({"error": "Thư mục nguồn không hợp lệ"}, 400)
@@ -461,6 +462,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                         suffix_output=suffix,
                         concurrency=concurrency,
                         auto_clean_censor=auto_clean,
+                        resume=resume,
                         status_callback=status_cb
                     )
                 except Exception as e:
@@ -671,6 +673,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             voice = req.get("voice", "vi-VN-NamMinhNeural")
             speed = float(req.get("speed", 1.0))
             normalize = bool(req.get("normalize", True))
+            resume = bool(req.get("resume", True))
 
             if not os.path.isdir(input_folder):
                 self._send_json({"success": False, "error": "Thư mục nguồn không hợp lệ"}, 400)
@@ -717,6 +720,17 @@ class BridgeHandler(BaseHTTPRequestHandler):
                             pct = round(((i - 1) / total) * 100, 1)
                             batch_tts_state["progress"] = pct
                             batch_tts_state["status_msg"] = f"Đang tạo audio: {os.path.basename(fpath)} ({i}/{total})"
+
+                        base_name = os.path.splitext(os.path.basename(fpath))[0]
+                        out_mp3 = os.path.join(output_folder, f"{base_name}.mp3")
+
+                        # Smart Resume: Nếu file audio đã tồn tại và có dung lượng hợp lệ (> 1024 bytes), bỏ qua
+                        if resume and os.path.exists(out_mp3) and os.path.getsize(out_mp3) > 1024:
+                            with batch_tts_lock:
+                                batch_tts_state["logs"].append(f"⏩ Đã có audio, bỏ qua: {os.path.basename(fpath)}")
+                            continue
+
+                        with batch_tts_lock:
                             batch_tts_state["logs"].append(f"[{i}/{total}] Đang đọc {os.path.basename(fpath)}...")
 
                         try:
@@ -724,9 +738,6 @@ class BridgeHandler(BaseHTTPRequestHandler):
                                 content = f.read().strip()
                             if not content:
                                 continue
-
-                            base_name = os.path.splitext(os.path.basename(fpath))[0]
-                            out_mp3 = os.path.join(output_folder, f"{base_name}.mp3")
 
                             loop.run_until_complete(
                                 tts_engine.synthesize(
@@ -797,6 +808,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             genre = req.get("genre", "xianxia")
             suffix = req.get("suffix", "_dich")
             custom_prompt = req.get("prompt", "").strip()
+            resume = bool(req.get("resume", True))
 
             if not os.path.isdir(input_folder):
                 self._send_json({"error": "Thư mục nguồn không hợp lệ"}, 400)
@@ -829,6 +841,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                         genre=genre,
                         suffix=suffix,
                         custom_prompt=custom_prompt,
+                        resume=resume,
                         status_callback=status_cb
                     )
                 except Exception as e:

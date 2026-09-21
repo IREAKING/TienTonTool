@@ -184,7 +184,7 @@ class ServiceBridge {
         return await resp.json();
     }
 
-    static async startBatch(inputFolder, outputFolder, suffix, model, beamSize, batchSize, opencc, concurrency = 3, autoClean = true) {
+    static async startBatch(inputFolder, outputFolder, suffix, model, beamSize, batchSize, opencc, concurrency = 3, autoClean = true, resume = true) {
         const resp = await fetch(`${HTTP_BRIDGE_URL}/start_batch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -197,7 +197,8 @@ class ServiceBridge {
                 batch_size: batchSize,
                 opencc: opencc,
                 concurrency: concurrency,
-                auto_clean: autoClean
+                auto_clean: autoClean,
+                resume: resume
             })
         });
         return await resp.json();
@@ -600,7 +601,7 @@ class ServiceBridge {
         }
     }
 
-    static async startBatchTts(inputFolder, outputFolder, voice, speed = 1.0, normalize = true) {
+    static async startBatchTts(inputFolder, outputFolder, voice, speed = 1.0, normalize = true, resume = true) {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/tts/batch_start`, {
                 method: "POST",
@@ -610,7 +611,8 @@ class ServiceBridge {
                     output_folder: outputFolder,
                     voice,
                     speed,
-                    normalize
+                    normalize,
+                    resume
                 })
             });
             return await resp.json();
@@ -658,7 +660,7 @@ class ServiceBridge {
         }
     }
 
-    static async startBatchConvert(inputFolder, outputFolder, mode = "rules", engine = "deepseek", genre = "xianxia", suffix = "_dich", prompt = "") {
+    static async startBatchConvert(inputFolder, outputFolder, mode = "rules", engine = "deepseek", genre = "xianxia", suffix = "_dich", prompt = "", resume = true) {
         try {
             const resp = await fetch(`${HTTP_BRIDGE_URL}/convert/batch_start`, {
                 method: "POST",
@@ -670,7 +672,8 @@ class ServiceBridge {
                     engine,
                     genre,
                     suffix,
-                    prompt
+                    prompt,
+                    resume
                 })
             });
             return await resp.json();

@@ -55,11 +55,12 @@ class BatchFileProcessor:
         suffix_output: str = "_viet",
         concurrency: int = 3,
         auto_clean_censor: bool = True,
+        resume: bool = True,
         status_callback: Optional[Callable[[str, float, int, int], None]] = None
     ) -> List[str]:
         """
         Dịch toàn bộ file .txt trong input_folder và lưu vào output_folder.
-        Hỗ trợ đa luồng (Multi-threading), tự động lưu từng chương (Auto-save) và khử rác kiểm duyệt.
+        Hỗ trợ đa luồng (Multi-threading), tự động lưu từng chương (Auto-save), khử rác kiểm duyệt và Smart Resume.
         """
         self.is_running = True
         self.should_stop = False
@@ -93,6 +94,7 @@ class BatchFileProcessor:
         start_time = time.time()
 
         def translate_single_file(filepath: str) -> Optional[str]:
+            nonlocal completed_count
             if self.should_stop:
                 return None
 
@@ -100,6 +102,16 @@ class BatchFileProcessor:
             base_name, ext = os.path.splitext(filename)
             out_filename = f"{prefix_output}{base_name}{suffix_output}{ext}"
             out_filepath = os.path.join(output_folder, out_filename)
+
+            # Smart Resume: Nếu file đã dịch tồn tại và có dung lượng hợp lệ (> 10 bytes), bỏ qua để dịch tiếp chương dang dở
+            if resume and os.path.exists(out_filepath) and os.path.getsize(out_filepath) > 10:
+                with self.lock:
+                    completed_count += 1
+                    cur_cnt = completed_count
+                if status_callback:
+                    pct = round((cur_cnt / total_files) * 100, 1)
+                    status_callback(f"⏩ Đã có bản dịch, bỏ qua: {filename}", pct, cur_cnt, total_files)
+                return out_filepath
 
             # Đọc nội dung
             raw_text = read_text_file(filepath).strip()
