@@ -48,6 +48,7 @@ mac_tool/*.log
 # Go binaries & temporary outputs
 extract_terms
 thuat_ngu_*.txt
+*.ckpt.jsonl
 
 # Wails build output & old aliases
 wails_dichtruyen/build/bin/

@@ -20,6 +20,7 @@ from text_cleaner import text_cleaner
 class ConvertRulesEngine:
     def __init__(self):
         self._init_rules()
+        self._init_dict_engine()
 
     def _init_rules(self):
         # 1. Các cụm từ cố định đặc trưng của Convert -> Dịch mượt
@@ -513,6 +514,38 @@ class ConvertRulesEngine:
             (re.compile(r'\bbộ kia dáng tươi cười\b', re.IGNORECASE), 'nụ cười kia'),
         ]
 
+    def _init_dict_engine(self):
+        """Khởi tạo từ điển thuật ngữ chuyển đổi Convert sang Dịch mượt mà (offline 100%)"""
+        dict_file = os.path.join(BASE_DIR, "convert_dict.json")
+        ext_dict = {}
+        if os.path.exists(dict_file):
+            try:
+                import json
+                with open(dict_file, "r", encoding="utf-8") as f:
+                    ext_dict = json.load(f)
+            except Exception as e:
+                print(f"Lỗi nạp convert_dict.json: {e}")
+
+        all_terms = dict(self.phrase_mappings)
+        for k, v in ext_dict.items():
+            all_terms[k] = v
+
+        sorted_keys = sorted(all_terms.keys(), key=len, reverse=True)
+        self._dict_map = {k: all_terms[k] for k in sorted_keys}
+        self._dict_lower_map = {k.lower(): v for k, v in all_terms.items()}
+
+        def make_safe_pattern(k):
+            prefix = r"(?<!\w)" if k[0].isalnum() else ""
+            suffix = r"(?!\w)" if k[-1].isalnum() else ""
+            return f"{prefix}{re.escape(k)}{suffix}"
+
+        pattern_str = "|".join(make_safe_pattern(k) for k in sorted_keys)
+        self._master_dict_regex = re.compile(pattern_str, re.IGNORECASE)
+
+    def _dict_replacer(self, m):
+        val = m.group(0)
+        return self._dict_map.get(val, self._dict_lower_map.get(val.lower(), val))
+
     def _capitalize_sentences(self, text: str) -> str:
         lines = text.split('\n')
         cap_lines = []
@@ -548,10 +581,13 @@ class ConvertRulesEngine:
         for pattern, repl in self.regex_patterns:
             result = pattern.sub(repl, result)
 
-        # Áp dụng từ điển cụm từ convert -> dịch
-        for src, tgt in self.phrase_mappings:
-            pattern = re.compile(re.escape(src), re.IGNORECASE)
-            result = pattern.sub(tgt, result)
+        # Áp dụng từ điển cụm từ convert -> dịch & thuật ngữ truyện dịch chuẩn (100% offline)
+        if hasattr(self, '_master_dict_regex') and self._master_dict_regex:
+            result = self._master_dict_regex.sub(self._dict_replacer, result)
+        else:
+            for src, tgt in self.phrase_mappings:
+                pattern = re.compile(re.escape(src), re.IGNORECASE)
+                result = pattern.sub(tgt, result)
 
         # Xóa dấu hai chấm bị lặp lại (ví dụ : : hoặc : : )
         result = re.sub(r':\s*:', ':', result)
